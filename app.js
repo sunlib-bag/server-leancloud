@@ -37,7 +37,7 @@ app.get('/', function (req, res) {
 });
 
 var download = require('download')
-var fs = require('fs')
+var fs = require('fs.extra');
 var path = require('path')
 var archiver = require('archiver-promise');
 
@@ -61,11 +61,8 @@ app.get('/testpack', function (req, res) {
     if (!fs.existsSync('download')) {
         fs.mkdirSync('download')
     }
-    if (!fs.existsSync(path.join('download', lesson_id))) {
-        fs.mkdirSync(path.join('download', lesson_id))
-    } else {
-
-    }
+    fs.rmrfSync(path.join('download', lesson_id))
+    fs.mkdirSync(path.join('download', lesson_id))
 
     var promises = []
     files.forEach(function (v, k) {
@@ -73,7 +70,7 @@ app.get('/testpack', function (req, res) {
     })
     Promise.all(promises)
         .then(function (results) {
-            var archive = archiver(path.join('download', lesson_id+ '.zip'), {
+            var archive = archiver(path.join('download', lesson_id + '.zip'), {
                 store: true
             });
             files.forEach(function (v, k) {
