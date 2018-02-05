@@ -63,11 +63,7 @@ app.get('/testpack', function (req, res) {
     }
     fs.rmrfSync(path.join('download', lesson_id))
     fs.mkdirSync(path.join('download', lesson_id))
-
-<<<<<<< HEAD
     
-=======
->>>>>>> eb2c82901f30033b6293c63f0ef1aa8c240cec45
     var promises = []
     files.forEach(function (v, k) {
         promises.push(download(v.url))
