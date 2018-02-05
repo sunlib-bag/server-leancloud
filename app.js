@@ -41,7 +41,6 @@ var fs = require('fs.extra');
 var path = require('path')
 var archiver = require('archiver-promise');
 
-
 app.get('/testpack', function (req, res) {
     var lesson_id = 'sadfasdfsdafadsfsf'
     var files = [
@@ -65,6 +64,7 @@ app.get('/testpack', function (req, res) {
     fs.rmrfSync(path.join('download', lesson_id))
     fs.mkdirSync(path.join('download', lesson_id))
 
+    
     var promises = []
     files.forEach(function (v, k) {
         promises.push(download(v.url))
