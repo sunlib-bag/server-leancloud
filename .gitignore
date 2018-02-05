@@ -3,7 +3,10 @@ npm-debug.log
 start.sh
 .avoscloud
 .leancloud
+<<<<<<< HEAD
 .idea/
+=======
+>>>>>>> eb2c82901f30033b6293c63f0ef1aa8c240cec45
 
 # VIM
 *~
