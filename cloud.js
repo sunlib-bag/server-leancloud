@@ -6,3 +6,25 @@ var AV = require('leanengine');
 AV.Cloud.define('hello', function(request) {
   return 'Hello world!';
 });
+
+
+AV.Cloud.afterSave('Lesson', function(request) {
+  console.log('这里是afterSave');
+  console.log(request)
+});
+
+
+AV.Cloud.afterUpdate('Lesson', function(request) {
+  console.log('这里是afterUpdate');
+  console.log(request);
+  // var query = new AV.Query('Lesson');
+  // return query.get(request.object.get('').id).then(function(post) {
+  //     post.increment('comments');
+  //     return post.save();
+  // });
+});
+
+
+
+
+

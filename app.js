@@ -36,13 +36,13 @@ app.get('/', function (req, res) {
     res.render('index', {currentTime: new Date()});
 });
 
-var download = require('download')
+var download = require('download');
 var fs = require('fs.extra');
-var path = require('path')
+var path = require('path');
 var archiver = require('archiver-promise');
 
-app.get('/testpack', function (req, res) {
-    var lesson_id = 'sadfasdfsdafadsfsf'
+app.get('/pack', function (req, res) {
+    var lesson_id = 'sadfasdfsdafadsfsf';
     var files = [
         {
             "id": "5a70244d1b69e6003c5380ae",
@@ -61,8 +61,8 @@ app.get('/testpack', function (req, res) {
     if (!fs.existsSync('download')) {
         fs.mkdirSync('download')
     }
-    fs.rmrfSync(path.join('download', lesson_id))
-    fs.mkdirSync(path.join('download', lesson_id))
+    fs.rmrfSync(path.join('download', lesson_id));
+    fs.mkdirSync(path.join('download', lesson_id));
     var promises = []
     files.forEach(function (v, k) {
         promises.push(download(v.url))
