@@ -63,7 +63,7 @@ app.get('/pack', function (req, res) {
     }
     fs.rmrfSync(path.join('download', lesson_id));
     fs.mkdirSync(path.join('download', lesson_id));
-    var promises = []
+    var promises = [];
     files.forEach(function (v, k) {
         promises.push(download(v.url))
     })
@@ -86,6 +86,16 @@ app.get('/pack', function (req, res) {
 
         })
 
+});
+
+app.get('/test', function (req, res) {
+    AV.Cloud.run('hello', {}).then(function (value) {
+        console.log(value);
+        res.send(value)
+    }, function (error) {
+        console.log(error);
+        res.send(error)
+    })
 });
 
 // 可以将一类的路由单独保存在一个文件中
