@@ -42,7 +42,35 @@ var path = require('path');
 var archiver = require('archiver-promise');
 
 app.get('/pack', function (req, res) {
-    var lesson_id = 'sadfasdfsdafadsfsf';
+
+    //这里是调用云函数的方法 ------->
+    // AV.Cloud.run('pack', {}).then(
+    //     function (value) {
+    //         res.send(value)
+    //     }, function (error) {
+    //         console.log(error);
+    //     }
+    // )
+    //一直到这里 <-------
+
+// 以下是将文件更新到package字段的代码 -------->
+//     var update = AV.Object.createWithoutData('Lesson', '5a7da2c99f54540070e04714');
+//     update.set('package', {
+//         "__type": "File",
+//         "objectId": "5a7ec161756571003c6bd3f5",
+//     });
+//     update.save().then(function (value) {
+//         console.log('添加文件成功！！！');
+//         res.send('添加文件成功！！！')
+//     }, function (reason) {
+//         console.log(reason);
+//         res.send(reason)
+//     })
+//  一直到这里结束 <---------
+
+    //接下来是测试文件上传的方法 ------------>
+
+    var lesson_id = '5a7da2c99f54540070e04714';
     var files = [
         {
             "id": "5a70244d1b69e6003c5380ae",
@@ -81,10 +109,21 @@ app.get('/pack', function (req, res) {
 
             archive.finalize()
                 .then(function () {
-                    res.send('ok')
+                    console.log(typeof(archive));
+                    res.send(archive)
                 })
-
         })
+
+    // var file = new AV.File(path.join(lesson_id + '.zip'), archive);
+    // file.save().then(function (value) {
+    //     console.log(value.id);
+    //     res.send(value)
+    // },function (reason) {
+    //     console.log(reason);
+    //     res.send(reason)
+    // });
+
+    //一直到这里结束 <------------
 
 });
 
