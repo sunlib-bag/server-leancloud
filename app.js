@@ -33,7 +33,7 @@ app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
 
 app.get('/', function (req, res) {
-    res.render('index', {currentTime: new Date()});
+    res.render('index.html', {currentTime: new Date()});
 });
 
 var download = require('download');
@@ -41,80 +41,45 @@ var fs = require('fs.extra');
 var path = require('path');
 var archiver = require('archiver-promise');
 
+
+app.get('/requestSmsCode', function (req, res) {
+
+
+});
+
+
+app.get('/test', function (req, res) {
+    AV.Cloud.run('hello',{}).then(function (value) {
+        res.send(value)
+    })
+})
+
+
 app.get('/pack', function (req, res) {
 
-    //这里是调用云函数的方法 ------->
-    // AV.Cloud.run('pack', {}).then(
-    //     function (value) {
-    //         res.send(value)
-    //     }, function (error) {
-    //         console.log(error);
-    //     }
-    // )
-    //一直到这里 <-------
+    // console.log(req.query.lesson_id);  //这里整理发送过来的请求，获取lesson_id参数---------->
 
-// 以下是将文件更新到package字段的代码 -------->
-//     var update = AV.Object.createWithoutData('Lesson', '5a7da2c99f54540070e04714');
-//     update.set('package', {
-//         "__type": "File",
-//         "objectId": "5a7ec161756571003c6bd3f5",
-//     });
-//     update.save().then(function (value) {
-//         console.log('添加文件成功！！！');
-//         res.send('添加文件成功！！！')
-//     }, function (reason) {
-//         console.log(reason);
-//         res.send(reason)
-//     })
-//  一直到这里结束 <---------
+    var lessonFilesData = {
+        'lesson_id': req.query.lesson_id
+    };
+
+    // res.send('isok')
+    //一直到这里结束<------------
+
+    //这里是调用云函数的方法 ------->
+    AV.Cloud.run('pack', lessonFilesData).then(
+        function (value) {
+            res.send(value)
+        }, function (error) {
+            console.log(error);
+            res.send(error)
+        }
+    )
+    //一直到这里 <-------
 
     //接下来是测试文件上传的方法 ------------>
 
-    var lesson_id = '5a7da2c99f54540070e04714';
-    var files = [
-        {
-            "id": "5a70244d1b69e6003c5380ae",
-            "url": "http://ac-cqbvih8f.clouddn.com/9bdb0f354d3829aa54c8.png"
-        },
-        {
-            "id": "5a701fe11b69e6003c5361ba",
-            "url": "http://ac-cqbvih8f.clouddn.com/d419d4ad36a738679e05.png"
-        },
-        {
-            "id": "5a701fd3a22b9d003d14c6f1",
-            "url": "http://ac-cqbvih8f.clouddn.com/813ff9b1c64b926d1840.png"
-        }
-    ]
-
-    if (!fs.existsSync('download')) {
-        fs.mkdirSync('download')
-    }
-    fs.rmrfSync(path.join('download', lesson_id));
-    fs.mkdirSync(path.join('download', lesson_id));
-    var promises = [];
-    files.forEach(function (v, k) {
-        promises.push(download(v.url))
-    })
-    Promise.all(promises)
-        .then(function (results) {
-            var archive = archiver(path.join('download', lesson_id + '.zip'), {
-                store: true
-            });
-            files.forEach(function (v, k) {
-                console.log('downloaded', v)
-                var filename = path.join('download', lesson_id, v.id)
-                fs.writeFileSync(filename, results[k])
-                archive.file(filename, {name: 'files/' + v.id});
-            })
-
-            archive.finalize()
-                .then(function () {
-                    console.log(typeof(archive));
-                    res.send(archive)
-                })
-        })
-
-    // var file = new AV.File(path.join(lesson_id + '.zip'), archive);
+    // var file = new AV.File();
     // file.save().then(function (value) {
     //     console.log(value.id);
     //     res.send(value)
@@ -122,19 +87,7 @@ app.get('/pack', function (req, res) {
     //     console.log(reason);
     //     res.send(reason)
     // });
-
     //一直到这里结束 <------------
-
-});
-
-app.get('/test', function (req, res) {
-    AV.Cloud.run('hello', {}).then(function (value) {
-        console.log(value);
-        res.send(value)
-    }, function (error) {
-        console.log(error);
-        res.send(error)
-    })
 });
 
 // 可以将一类的路由单独保存在一个文件中
