@@ -15,18 +15,30 @@ AV.Cloud.define('hello', function (request) {
 //这里是一个限制登录的云函数------>
 AV.Cloud.define('requestSmsCode', function (request) {
 
+    var phoneNumber = request.params.phoneNumber;
     var phonesArr = [];
     var query = new AV.Query('_User');
-    query.find().then(function (value) {
+    return query.find().then(function (value) {
 
         value.forEach(function (data) {
             phonesArr.push(data.attributes.mobilePhoneNumber);
         });
 
-        return phonesArr  //用户手机号的集合
+        console.log(phonesArr);
+
+        if(phonesArr.indexOf(phoneNumber) != -1){
+            console.log('ok');
+            return 'ok'
+        }else {
+            console.log('is not user');
+            return 'is not user'
+        }
+          //用户手机号的集合
     }, function (error) {
         console.log(error);
     });
+
+    // return 'wangyongfei'
 })
 //一直到这里结束<-------------
 
@@ -174,29 +186,29 @@ AV.Cloud.define('pack', function (request) {   //打包
                 archive.finalize()
                     .then(function () {
                         console.log('package is ok!!!');
-                        fs.readFile(path.join('download', lesson_id + '.zip'), function (err, data) {  //读取压缩包数据并上传文件
-                            var file = new AV.File(path.join(lesson_id + '.zip'), data);
-                            file.save().then(function (valueFile) {
-                                console.log(valueFile.id);
-
-                                var query = new AV.Query('Lesson');   //查询该课程的当前信息并更新信息，将压缩包保存到当前id的lesson下
-                                query.get(lesson_id).then(function (value1) {
-                                    var draft_version_code = value1.attributes.draft_version_code;
-                                    var update = AV.Object.createWithoutData('Lesson', lesson_id);
-                                    update.set('version_code', draft_version_code);
-                                    update.set('isPublished', true);
-                                    update.set('package', {"__type": "File", "objectId": valueFile.id});
-                                    update.save().then(function (value2) {
-                                        console.log('成功保存');
-                                    }, function (err) {
-                                        console.log(err);
-                                    });
-                                })
-
-                            }, function (reason) {
-                                console.log(reason);
-                            });
-                        })
+                        // fs.readFile(path.join('download', lesson_id + '.zip'), function (err, data) {  //读取压缩包数据并上传文件
+                        //     var file = new AV.File(path.join(lesson_id + '.zip'), data);
+                        //     file.save().then(function (valueFile) {
+                        //         console.log(valueFile.id);
+                        //
+                        //         var query = new AV.Query('Lesson');   //查询该课程的当前信息并更新信息，将压缩包保存到当前id的lesson下
+                        //         query.get(lesson_id).then(function (value1) {
+                        //             var draft_version_code = value1.attributes.draft_version_code;
+                        //             var update = AV.Object.createWithoutData('Lesson', lesson_id);
+                        //             update.set('version_code', draft_version_code);
+                        //             update.set('isPublished', true);
+                        //             update.set('package', {"__type": "File", "objectId": valueFile.id});
+                        //             update.save().then(function (value2) {
+                        //                 console.log('成功保存');
+                        //             }, function (err) {
+                        //                 console.log(err);
+                        //             });
+                        //         })
+                        //
+                        //     }, function (reason) {
+                        //         console.log(reason);
+                        //     });
+                        // })
                     })
             })
     }

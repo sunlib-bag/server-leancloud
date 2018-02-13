@@ -50,12 +50,24 @@ var archiver = require('archiver-promise');
 
 app.get('/requestSmsCode', function (req, res) {
 
+    var phoneNumber = {
+        'phoneNumber': req.query.phoneNumber
+    }
+
+    AV.Cloud.run('requestSmsCode', phoneNumber).then(
+        function (value) {
+            res.send(value)
+        },function (error) {
+            console.log(error);
+            res.send(error)
+        }
+    )
 
 });
 
 
 app.get('/test', function (req, res) {
-    AV.Cloud.run('hello',{}).then(function (value) {
+    AV.Cloud.run('hello', {}).then(function (value) {
         res.send(value)
     })
 })
