@@ -145,17 +145,14 @@ AV.Cloud.define('pack', function (request) {   //打包
                     store: true
                 });
 
-                var filesName = [];
-
                 filesData.forEach(function (v, k) {
                     console.log('downloaded', v)
                     var filename = path.join('download', lesson_id, v.id)
                     fs.writeFileSync(filename, results[k])
-                    filesName.push(filename)
                     archive.file(filename, {name: 'materials/' + v.id});
                 });
 
-                fs.writeFileSync('download/manifest.json', JSON.stringify(manifestData));
+                // fs.writeFileSync('download/manifest.json', JSON.stringify(manifestData));
                 // archive.file('download/manifest.json', {name: 'manifest.json'});  //这里需要将.json文件也打包进去，但是现在有错误
 
                 // for (var i = 0; i < filesName; i++) {
