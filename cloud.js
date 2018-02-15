@@ -45,20 +45,20 @@ AV.Cloud.define('requestSmsCode', function (request) {
 AV.Cloud.define('pack', function (request) {   //打包
 
     var lesson_id = request.params.lesson_id;
-    var files = [
-        {
-            "id": "5a70244d1b69e6003c5380ae",
-            "url": "http://ac-cqbvih8f.clouddn.com/9bdb0f354d3829aa54c8.png"
-        },
-        {
-            "id": "5a701fe11b69e6003c5361ba",
-            "url": "http://ac-cqbvih8f.clouddn.com/d419d4ad36a738679e05.png"
-        },
-        {
-            "id": "5a701fd3a22b9d003d14c6f1",
-            "url": "http://ac-cqbvih8f.clouddn.com/813ff9b1c64b926d1840.png"
-        }
-    ];
+    // var files = [
+    //     {
+    //         "id": "5a70244d1b69e6003c5380ae",
+    //         "url": "http://ac-cqbvih8f.clouddn.com/9bdb0f354d3829aa54c8.png"
+    //     },
+    //     {
+    //         "id": "5a701fe11b69e6003c5361ba",
+    //         "url": "http://ac-cqbvih8f.clouddn.com/d419d4ad36a738679e05.png"
+    //     },
+    //     {
+    //         "id": "5a701fd3a22b9d003d14c6f1",
+    //         "url": "http://ac-cqbvih8f.clouddn.com/813ff9b1c64b926d1840.png"
+    //     }
+    // ];
 
     var manifestData = {};
     var materials = [];
