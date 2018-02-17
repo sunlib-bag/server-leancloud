@@ -3,7 +3,6 @@ var download = require('download');
 var fs = require('fs.extra');
 var path = require('path');
 var archiver = require('archiver-promise');
-var unzip2 = require('unzip2');
 
 /**
  * 一个简单的云代码方法
