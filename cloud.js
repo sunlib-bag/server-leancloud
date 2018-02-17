@@ -3,6 +3,7 @@ var download = require('download');
 var fs = require('fs.extra');
 var path = require('path');
 var archiver = require('archiver-promise');
+var unzip2 = require('unzip2');
 
 /**
  * 一个简单的云代码方法
@@ -26,39 +27,26 @@ AV.Cloud.define('requestSmsCode', function (request) {
 
         console.log(phonesArr);
 
-        if(phonesArr.indexOf(phoneNumber) != -1){
+        if (phonesArr.indexOf(phoneNumber) != -1) {
             console.log('ok');
             return 'ok'
-        }else {
+        } else {
             console.log('is not user');
             return 'is not user'
         }
-          //用户手机号的集合
+        //用户手机号的集合
     }, function (error) {
         console.log(error);
     });
 
-    // return 'wangyongfei'
-})
+});
 //一直到这里结束<-------------
 
+
+//这里是发布打包的云函数------------->
 AV.Cloud.define('pack', function (request) {   //打包
 
     var lesson_id = request.params.lesson_id;
-    // var files = [
-    //     {
-    //         "id": "5a70244d1b69e6003c5380ae",
-    //         "url": "http://ac-cqbvih8f.clouddn.com/9bdb0f354d3829aa54c8.png"
-    //     },
-    //     {
-    //         "id": "5a701fe11b69e6003c5361ba",
-    //         "url": "http://ac-cqbvih8f.clouddn.com/d419d4ad36a738679e05.png"
-    //     },
-    //     {
-    //         "id": "5a701fd3a22b9d003d14c6f1",
-    //         "url": "http://ac-cqbvih8f.clouddn.com/813ff9b1c64b926d1840.png"
-    //     }
-    // ];
 
     var manifestData = {};
     var materials = [];
@@ -137,85 +125,83 @@ AV.Cloud.define('pack', function (request) {   //打包
             fs.mkdirSync('download')
         }
         fs.rmrfSync(path.join('download', lesson_id));
+        fs.rmrfSync(path.join('download', 'zip'));
         fs.mkdirSync(path.join('download', lesson_id));
+        fs.mkdirSync(path.join('download', 'zip'));
 
+        // fs.writeFileSync('download/manifest.json', JSON.stringify(manifestData));
 
-        pcak(manifestData, filesData)
+        downloadData(manifestData, filesData)
+        // beforePack(manifestData, filesData)
     }
 
-    function pcak(manifestData, filesData) {
+    function downloadData(manifestData, filesData) {
+        console.log(filesData);
+        var files = [];
+        for (var i = 0; i < filesData.length; i++) {
+            (function (i) {
+                var file = filesData[i];
+                var filename = path.join('download', lesson_id, file.id);
 
-        console.log('开始执行打包程序！');
-
-        var promises = [];
-        filesData.forEach(function (v, k) {
-            promises.push(download(v.url))
-        })
-        Promise.all(promises)
-            .then(function (results) {
-                var archive = archiver(path.join('download', lesson_id + '.zip'), {
-                    store: true
+                download(file.url).then(function (data) {
+                    console.log('download' + JSON.stringify(file.url));
+                    fs.writeFileSync(filename, data);
+                    files.push(filename);
+                    if (files.length == filesData.length) {
+                        pack();
+                    }
                 });
+            })(i)
+        }
+    }
 
-                filesData.forEach(function (v, k) {
-                    console.log('downloaded', v)
-                    var filename = path.join('download', lesson_id, v.id)
-                    fs.writeFileSync(filename, results[k])
-                    archive.file(filename, {name: 'materials/' + v.id});
-                });
 
-                // fs.writeFileSync('download/manifest.json', JSON.stringify(manifestData));
-                // archive.file('download/manifest.json', {name: 'manifest.json'});  //这里需要将.json文件也打包进去，但是现在有错误
+    function pack() {
+        // console.log('现在开始写json文件！');
+        fs.writeFileSync('download/zip/manifest.json', JSON.stringify(manifestData));
+        // console.log('现在开始归档文件！');
+        var archive = archiver(path.join('download', lesson_id + '.zip'), {
+            store: true
+        });
 
-                // for (var i = 0; i < filesName; i++) {
-                //     var fileName = filesName[i];
-                //     var name = fileName.split('/');
-                //     var file = name[name.length - 1];
-                //     archive.file(fileName, {name: 'materials/' + file});
-                //
-                //     // if (i + 1 == filesName.length) {
-                //     //     console.log('11111111')
-                //     //
-                //     // }
-                // }
+        archive.directory('download/' + lesson_id, 'materials');
+        archive.file('download/zip/manifest.json', {name: 'manifest.json'});
 
-                archive.on('error', function (err) {
-                    throw err;
-                });
+        archive.finalize().then(function () {
+            console.log('打包成功！！');
 
-                archive.finalize()
-                    .then(function () {
-                        console.log('package is ok!!!');
-                        // fs.readFile(path.join('download', lesson_id + '.zip'), function (err, data) {  //读取压缩包数据并上传文件
-                        //     var file = new AV.File(path.join(lesson_id + '.zip'), data);
-                        //     file.save().then(function (valueFile) {
-                        //         console.log(valueFile.id);
-                        //
-                        //         var query = new AV.Query('Lesson');   //查询该课程的当前信息并更新信息，将压缩包保存到当前id的lesson下
-                        //         query.get(lesson_id).then(function (value1) {
-                        //             var draft_version_code = value1.attributes.draft_version_code;
-                        //             var update = AV.Object.createWithoutData('Lesson', lesson_id);
-                        //             update.set('version_code', draft_version_code);
-                        //             update.set('isPublished', true);
-                        //             update.set('package', {"__type": "File", "objectId": valueFile.id});
-                        //             update.save().then(function (value2) {
-                        //                 console.log('成功保存');
-                        //             }, function (err) {
-                        //                 console.log(err);
-                        //             });
-                        //         })
-                        //
-                        //     }, function (reason) {
-                        //         console.log(reason);
-                        //     });
-                        // })
+            fs.readFile(path.join('download', lesson_id + '.zip'), function (err, data) {  //读取压缩包数据并上传文件
+                var file = new AV.File(lesson_id + '.zip', data);
+                file.save().then(function (valueFile) {
+                    console.log(valueFile.id);
+
+                    var query = new AV.Query('Lesson');   //查询该课程的当前信息并更新信息，将压缩包保存到当前id的lesson下
+                    query.get(lesson_id).then(function (value1) {
+                        var draft_version_code = value1.attributes.draft_version_code;
+                        var update = AV.Object.createWithoutData('Lesson', lesson_id);
+                        update.set('version_code', draft_version_code);
+                        update.set('isPublished', true);
+                        update.set('package', {"__type": "File", "objectId": valueFile.id});
+                        update.save().then(function (value2) {
+                            console.log('成功保存');
+                        }, function (err) {
+                            console.log(err);
+                        });
                     })
+
+                }, function (reason) {
+                    console.log(reason);
+                });
             })
+
+        })
+
+
     }
 
     return 'pcackage is OK'
-
 });
+//一直到这里结束<--------------------
 
 //这里是保存历史版本数据的hook函数---------->>>>>>
 AV.Cloud.afterSave('Lesson', function (request) {
