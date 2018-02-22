@@ -124,9 +124,10 @@ AV.Cloud.define('pack', function (request) {   //打包
             fs.mkdirSync('download')
         }
         fs.rmrfSync(path.join('download', lesson_id));
-        fs.rmrfSync(path.join('download', 'zip'));
+        fs.rmrfSync(path.join('download', lesson_id + '-zip'));
+        fs.rmrfSync(path.join('download', lesson_id + '.zip'));
         fs.mkdirSync(path.join('download', lesson_id));
-        fs.mkdirSync(path.join('download', 'zip'));
+        fs.mkdirSync(path.join('download', lesson_id + '-zip'));
 
         // fs.writeFileSync('download/manifest.json', JSON.stringify(manifestData));
 
@@ -157,19 +158,19 @@ AV.Cloud.define('pack', function (request) {   //打包
 
     function pack() {  //现在开始对该课程的所有数据进行打包并上传课程压缩包到该课程的package域下
         // console.log('现在开始写json文件！');
-        fs.writeFileSync('download/zip/manifest.json', JSON.stringify(manifestData));
-        // console.log('现在开始归档文件！');
+        fs.writeFileSync(path.join('download', lesson_id + '-zip', 'manifest.json'), JSON.stringify(manifestData));
+        console.log('现在开始归档文件！');
         var archive = archiver(path.join('download', lesson_id + '.zip'), {
             store: true
         });
 
         archive.directory('download/' + lesson_id, 'materials');
-        archive.file('download/zip/manifest.json', {name: 'manifest.json'});
+        archive.file('download/' + lesson_id + '-zip/' + 'manifest.json', {name: 'manifest.json'});
 
         archive.finalize().then(function () {
-            console.log('打包成功！！');
+            console.log('打包成功！开始上传文件！');
 
-            fs.readFile(path.join('download', lesson_id + '.zip'), function (err, data) {  //读取压缩包数据并上传文件
+            fs.readFile('download/' + lesson_id + '.zip', function (err, data) {  //读取压缩包数据并上传文件
                 var file = new AV.File(lesson_id + '.zip', data);
                 file.save().then(function (valueFile) {
                     console.log(valueFile.id);
