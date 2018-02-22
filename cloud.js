@@ -72,7 +72,7 @@ AV.Cloud.define('pack', function (request) {   //打包
         })
     }
 
-    function queryLessonMaterialData(manifestData, materials) {
+    function queryLessonMaterialData(manifestData, materials) {     //这里获取materials的id信息
         var queryLessonMaterial = new AV.Query('LessonMaterial');
         queryLessonMaterial.find().then(function (dataLessonMaterials) {
             for (var i = 0; i < dataLessonMaterials.length; i++) {
@@ -91,7 +91,7 @@ AV.Cloud.define('pack', function (request) {   //打包
         })
     }
 
-    function queryMaterialUrl(manifestData, materials) {
+    function queryMaterialUrl(manifestData, materials) {  //根据上边获取到的materials的id信息在Material的数据表中获取materials的信息
         var filesData = [];
         for (var i = 0; i < materials.length; i++) {
             (function (i) {
@@ -119,7 +119,7 @@ AV.Cloud.define('pack', function (request) {   //打包
         }
     }
 
-    function downloadFile(manifestData, filesData) {
+    function downloadFile(manifestData, filesData) {  //创建一个下载文件夹并清空该文件夹
         if (!fs.existsSync('download')) {
             fs.mkdirSync('download')
         }
@@ -134,7 +134,7 @@ AV.Cloud.define('pack', function (request) {   //打包
         // beforePack(manifestData, filesData)
     }
 
-    function downloadData(manifestData, filesData) {
+    function downloadData(manifestData, filesData) {  //开始根据获取到的materials的URL来下载materials
         console.log(filesData);
         var files = [];
         for (var i = 0; i < filesData.length; i++) {
@@ -142,7 +142,7 @@ AV.Cloud.define('pack', function (request) {   //打包
                 var file = filesData[i];
                 var filename = path.join('download', lesson_id, file.id);
 
-                download(file.url).then(function (data) {
+                download(file.url).then(function (data) {  //下载完成之后的回调
                     console.log('download' + JSON.stringify(file.url));
                     fs.writeFileSync(filename, data);
                     files.push(filename);
@@ -155,7 +155,7 @@ AV.Cloud.define('pack', function (request) {   //打包
     }
 
 
-    function pack() {
+    function pack() {  //现在开始对该课程的所有数据进行打包并上传课程压缩包到该课程的package域下
         // console.log('现在开始写json文件！');
         fs.writeFileSync('download/zip/manifest.json', JSON.stringify(manifestData));
         // console.log('现在开始归档文件！');
