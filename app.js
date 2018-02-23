@@ -76,7 +76,7 @@ app.get('/test', function (req, res) {
 app.get('/pack', function (req, res) {
 
     // console.log(req.query.lesson_id);  //这里整理发送过来的请求，获取lesson_id参数---------->
-
+    console.log('开始进入打包云函数');
     var lessonFilesData = {
         'lesson_id': req.query.lesson_id
     };
