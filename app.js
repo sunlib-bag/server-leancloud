@@ -75,27 +75,24 @@ app.get('/test', function (req, res) {
 
 app.get('/pack', function (req, res) {
     //这里对调用接口的用户进行验证，获取phoneNumber的参数----------->
-    var phoneNumber = {
-        'phoneNumber': req.query.phoneNumber
-    };
-    //这里整理发送过来的请求，获取lesson_id参数---------->
+    console.log(req);
     var lessonFilesData = {
         'lesson_id': req.query.lessonId
     };
     //开始调用验证云函数进行验证----------->
-    AV.Cloud.run('requestSmsCode', phoneNumber).then(
-        function (value) {
-            if(value == 'ok'){
-                startPack();
-                // res.send('用户验证成功，开始打包！')
-            }else {
-                res.send(value)
-            }
-        },function (error) {
-            console.log(error);
-            res.send(error)
-        }
-    );
+    // AV.Cloud.run('requestSmsCode', phoneNumber).then(
+    //     function (value) {
+    //         if(value == 'ok'){
+    //             startPack();
+    //             // res.send('用户验证成功，开始打包！')
+    //         }else {
+    //             res.send(value)
+    //         }
+    //     },function (error) {
+    //         console.log(error);
+    //         res.send(error)
+    //     }
+    // );
     //这里是调用打包云函数的方法 ------->
     function startPack() {
         console.log('开始进入打包云函数' + JSON.stringify(lessonFilesData));
