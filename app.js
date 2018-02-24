@@ -57,7 +57,7 @@ app.get('/requestSmsCode', function (req, res) {
     AV.Cloud.run('requestSmsCode', phoneNumber).then(
         function (value) {
             res.send(value)
-        },function (error) {
+        }, function (error) {
             console.log(error);
             res.send(error)
         }
@@ -74,26 +74,21 @@ app.get('/test', function (req, res) {
 
 
 app.get('/pack', function (req, res) {
-    //这里对调用接口的用户进行验证，获取phoneNumber的参数----------->
-    console.log(req);
-    var lessonFilesData = {
-        'lesson_id': req.query.lessonId
-    };
-    //开始调用验证云函数进行验证----------->
-    // AV.Cloud.run('requestSmsCode', phoneNumber).then(
-    //     function (value) {
-    //         if(value == 'ok'){
-    //             startPack();
-    //             // res.send('用户验证成功，开始打包！')
-    //         }else {
-    //             res.send(value)
-    //         }
-    //     },function (error) {
-    //         console.log(error);
-    //         res.send(error)
-    //     }
-    // );
-    //这里是调用打包云函数的方法 ------->
+    //这里对调用接口的用户进行验证----------->
+    console.log('fangwendaozhelile');
+    console.log('检查---' + JSON.stringify(req.params));
+    if (req.currentUser) {
+        var lessonFilesData = {
+            'lesson_id': req.query.lessonId
+        };
+        // startPack();
+        console.log('----看这里----' + req.currentUser);
+        res.send('pcackage is OK');
+    } else {
+        // 没有登录，跳转到登录页面。
+        res.send('Not logged in');
+    }
+
     function startPack() {
         console.log('开始进入打包云函数' + JSON.stringify(lessonFilesData));
         AV.Cloud.run('pack', lessonFilesData).then(
@@ -105,6 +100,7 @@ app.get('/pack', function (req, res) {
             }
         )
     }
+
     //一直到这里 <-------
 
 });

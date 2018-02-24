@@ -265,10 +265,14 @@ AV.Cloud.define('pack', function (request) {   //打包
 });
 //一直到这里结束<--------------------
 
+AV.Cloud.beforeUpdate('Material', function (request) {
+    console.log(request);
+    return request
+});
+
 //这里是保存历史版本数据的hook函数---------->>>>>>
 AV.Cloud.afterSave('Lesson', function (request) {
     console.log('--afterSave');
-
     var query = new AV.Query('Lesson');
     return query.get(request.object.id).then(function (value) {
         var draft_version_code = value.attributes.draft_version_code;
