@@ -23,9 +23,7 @@ AV.Cloud.define('requestSmsCode', function (request) {
         value.forEach(function (data) {
             phonesArr.push(data.attributes.mobilePhoneNumber);
         });
-
         console.log(phonesArr);
-
         if (phonesArr.indexOf(phoneNumber) != -1) {
             console.log('ok');
             return 'ok'

@@ -88,6 +88,8 @@ app.get('/pack', function (req, res) {
             if(value == 'ok'){
                 startPack();
                 // res.send('用户验证成功，开始打包！')
+            }else {
+                res.send(value)
             }
         },function (error) {
             console.log(error);
