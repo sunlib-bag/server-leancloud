@@ -52,7 +52,7 @@ app.get('/requestSmsCode', function (req, res) {
 
     var phoneNumber = {
         'phoneNumber': req.query.phoneNumber
-    }
+    };
 
     AV.Cloud.run('requestSmsCode', phoneNumber).then(
         function (value) {
@@ -70,42 +70,44 @@ app.get('/test', function (req, res) {
     AV.Cloud.run('hello', {}).then(function (value) {
         res.send(value)
     })
-})
+});
 
 
 app.get('/pack', function (req, res) {
-
-    // console.log(req.query.lesson_id);  //这里整理发送过来的请求，获取lesson_id参数---------->
-    console.log('开始进入打包云函数');
-    var lessonFilesData = {
-        'lesson_id': req.query.lesson_id
+    //这里对调用接口的用户进行验证，获取phoneNumber的参数----------->
+    var phoneNumber = {
+        'phoneNumber': req.query.phoneNumber
     };
-
-    // res.send('isok')
-    //一直到这里结束<------------
-
-    //这里是调用云函数的方法 ------->
-    AV.Cloud.run('pack', lessonFilesData).then(
+    //这里整理发送过来的请求，获取lesson_id参数---------->
+    var lessonFilesData = {
+        'lesson_id': req.query.lessonId
+    };
+    //开始调用验证云函数进行验证----------->
+    AV.Cloud.run('requestSmsCode', phoneNumber).then(
         function (value) {
-            res.send(value)
-        }, function (error) {
+            if(value == 'ok'){
+                startPack();
+                // res.send('用户验证成功，开始打包！')
+            }
+        },function (error) {
             console.log(error);
             res.send(error)
         }
-    )
+    );
+    //这里是调用打包云函数的方法 ------->
+    function startPack() {
+        console.log('开始进入打包云函数' + JSON.stringify(lessonFilesData));
+        AV.Cloud.run('pack', lessonFilesData).then(
+            function (value) {
+                res.send(value)
+            }, function (error) {
+                console.log(error);
+                res.send(error)
+            }
+        )
+    }
     //一直到这里 <-------
 
-    //接下来是测试文件上传的方法 ------------>
-
-    // var file = new AV.File();
-    // file.save().then(function (value) {
-    //     console.log(value.id);
-    //     res.send(value)
-    // },function (reason) {
-    //     console.log(reason);
-    //     res.send(reason)
-    // });
-    //一直到这里结束 <------------
 });
 
 // 可以将一类的路由单独保存在一个文件中
