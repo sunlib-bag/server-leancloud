@@ -71,18 +71,19 @@ app.get('/test', function (req, res) {
     //     res.send(value)
     // })
 
-    //查询_Role表的教师角色
+    // 查询_Role表的教师角色
     var teacher = AV.Object.createWithoutData('_Role', '5a76ada2ee920a0045e23e17');
 
     var user = new AV.Object('_User');
     user.set('username', 'wang');
-    user.set('mobilePhoneNumber', '15127125956');
+    user.set('mobilePhoneNumber', '13436378664');
     user.set('mobilePhoneVerified', true);
     user.set('password', '452549');
 
     console.log('查看格式------' + JSON.stringify(user));
 
     user.save().then(function (value) {
+        // updataLesson()
         console.log(value)
         res.send(value)
     }, function (err) {
