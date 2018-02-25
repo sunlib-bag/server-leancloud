@@ -269,7 +269,7 @@ AV.Cloud.define('pack', function (request) {   //打包
 AV.Cloud.afterSave('_User', function (request) {
 
     console.log('保存后对新注册的用户创建角色');
-    console.log('新用户信息' + JSON.stringify(request));
+    console.log('新用户信息' + request);
 
     var teacher = AV.Object.createWithoutData('_Role', '5a76ada2ee920a0045e23e17');
 
