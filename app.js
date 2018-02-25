@@ -72,18 +72,20 @@ app.get('/test', function (req, res) {
     // })
 
     //查询_Role表的教师角色
-    // var teacher = AV.Object.createWithoutData('_Role', '5a76ada2ee920a0045e23e17');
+    var teacher = AV.Object.createWithoutData('_Role', '5a76ada2ee920a0045e23e17');
 
     var user = new AV.Object('_User');
     user.set('username', 'wang');
-    user.set('mobilePhoneNumber', '18710004250');
+    user.set('mobilePhoneNumber', '15127125956');
     user.set('mobilePhoneVerified', true);
     user.set('password', '452549');
+
+    console.log('查看格式------' + JSON.stringify(user));
 
     user.save().then(function (value) {
         console.log(value)
         res.send(value)
-    },function (err) {
+    }, function (err) {
         console.log(err)
         res.send(err)
     })
@@ -103,7 +105,6 @@ app.get('/test', function (req, res) {
     // })
 
 
-
 });
 
 
@@ -118,8 +119,8 @@ app.get('/pack', function (req, res) {
     console.log('----看这里----' + req.currentUser);
     res.send('pcackage is OK');
     // } else {
-        // 没有登录，跳转到登录页面。
-        // res.send('Not logged in');
+    // 没有登录，跳转到登录页面。
+    // res.send('Not logged in');
     // }
 
     function startPack() {
