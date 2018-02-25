@@ -265,22 +265,11 @@ AV.Cloud.define('pack', function (request) {   //打包
 });
 //一直到这里结束<--------------------
 
-
+//新注册的用户默认创建teacher角色的hook函数
 AV.Cloud.afterSave('_User', function (request) {
-
-    console.log('保存后对新注册的用户创建角色');
-    console.log('新用户信息' + request);
-
+    console.log('设置当前用户为teacher');
     var teacher = AV.Object.createWithoutData('_Role', '5a76ada2ee920a0045e23e17');
-
-    // var user = new AV.Object('_User');
-    // user.set('username', 'wang');
-    // user.set('mobilePhoneNumber', '18710004250');
-    // user.set('mobilePhoneVerified', true);
-    // user.set('password', '452549');
-
     var users = [request.object];
-    //
     var relation = teacher.relation('users');
     users.map(relation.add.bind(relation));
     return teacher.save().then(function (value) {
@@ -289,16 +278,6 @@ AV.Cloud.afterSave('_User', function (request) {
         console.log(reason)
     });
 
-
-    // return AV.Object.saveAll(users).then(function (value) {
-    //     var relation = teacher.relation('users');
-    //     users.map(relation.add.bind(relation));
-    //     return teacher.save();
-    // }).then(function (value) {
-    //     console.log('保存成功'+value);
-    // }, function (reason) {
-    //     console.log(reason);
-    // })
 });
 
 //这里是保存历史版本数据的hook函数---------->>>>>>

@@ -42,12 +42,6 @@ app.get('/', function (req, res) {
 
 // app.get('/', index);
 
-var download = require('download');
-var fs = require('fs.extra');
-var path = require('path');
-var archiver = require('archiver-promise');
-
-
 app.get('/requestSmsCode', function (req, res) {
 
     var phoneNumber = {
@@ -67,45 +61,9 @@ app.get('/requestSmsCode', function (req, res) {
 
 
 app.get('/test', function (req, res) {
-    // AV.Cloud.run('hello', {}).then(function (value) {
-    //     res.send(value)
-    // })
-
-    // 查询_Role表的教师角色
-    var teacher = AV.Object.createWithoutData('_Role', '5a76ada2ee920a0045e23e17');
-
-    var user = new AV.Object('_User');
-    user.set('username', 'wang');
-    user.set('mobilePhoneNumber', '13436378664');
-    user.set('mobilePhoneVerified', true);
-    user.set('password', '452549');
-
-    console.log('查看格式------' + JSON.stringify(user));
-
-    user.save().then(function (value) {
-        // updataLesson()
-        console.log(value)
+    AV.Cloud.run('hello', {}).then(function (value) {
         res.send(value)
-    }, function (err) {
-        console.log(err)
-        res.send(err)
     })
-
-
-    // var users = [user];
-    // AV.Object.saveAll(users).then(function (value) {
-    //     var relation = teacher.relation('users');
-    //     users.map(relation.add.bind(relation));
-    //     return teacher.save();
-    // }).then(function (value) {
-    //     console.log(value);
-    //     res.send('保存成功')
-    // },function (reason) {
-    //     console.log(reason)
-    //     res.send(reason)
-    // })
-
-
 });
 
 
