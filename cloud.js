@@ -265,9 +265,21 @@ AV.Cloud.define('pack', function (request) {   //打包
 });
 //一直到这里结束<--------------------
 
+AV.Cloud.afterUpdate('_User', function (request){
+    console.log('更新后对新注册的用户创建角色');
+    console.log('新用户信息' + request);
+
+    var query = new AV.Query('_User');
+    return query.find().then(function (value) {
+        console.log(value)
+    }, function (reason) {
+        console.log(reason)
+    })
+})
+
 AV.Cloud.afterSave('_User', function (request) {
 
-    console.log('开始对新注册的用户创建角色');
+    console.log('保存后对新注册的用户创建角色');
     console.log('新用户信息' + request);
 
     var query = new AV.Query('_User');
