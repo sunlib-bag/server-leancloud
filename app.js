@@ -67,27 +67,60 @@ app.get('/requestSmsCode', function (req, res) {
 
 
 app.get('/test', function (req, res) {
-    AV.Cloud.run('hello', {}).then(function (value) {
+    // AV.Cloud.run('hello', {}).then(function (value) {
+    //     res.send(value)
+    // })
+
+    //查询_Role表的教师角色
+    // var teacher = AV.Object.createWithoutData('_Role', '5a76ada2ee920a0045e23e17');
+
+    var user = new AV.Object('_User');
+    user.set('username', 'wang');
+    user.set('mobilePhoneNumber', '18710004250');
+    user.set('mobilePhoneVerified', true);
+    user.set('password', '452549');
+
+    user.save().then(function (value) {
+        console.log(value)
         res.send(value)
+    },function (err) {
+        console.log(err)
+        res.send(err)
     })
+
+
+    // var users = [user];
+    // AV.Object.saveAll(users).then(function (value) {
+    //     var relation = teacher.relation('users');
+    //     users.map(relation.add.bind(relation));
+    //     return teacher.save();
+    // }).then(function (value) {
+    //     console.log(value);
+    //     res.send('保存成功')
+    // },function (reason) {
+    //     console.log(reason)
+    //     res.send(reason)
+    // })
+
+
+
 });
 
 
 app.get('/pack', function (req, res) {
     //这里对调用接口的用户进行验证----------->
-    console.log('fangwendaozhelile');
-    console.log('检查---' + JSON.stringify(req.params));
-    if (req.currentUser) {
-        var lessonFilesData = {
-            'lesson_id': req.query.lessonId
-        };
-        // startPack();
-        console.log('----看这里----' + req.currentUser);
-        res.send('pcackage is OK');
-    } else {
+    console.log('检查---' + res);
+    // if (req.currentUser) {
+    var lessonFilesData = {
+        'lesson_id': req.query.lessonId
+    };
+    // startPack();
+    console.log('----看这里----' + req.currentUser);
+    res.send('pcackage is OK');
+    // } else {
         // 没有登录，跳转到登录页面。
-        res.send('Not logged in');
-    }
+        // res.send('Not logged in');
+    // }
 
     function startPack() {
         console.log('开始进入打包云函数' + JSON.stringify(lessonFilesData));

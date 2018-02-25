@@ -265,9 +265,28 @@ AV.Cloud.define('pack', function (request) {   //打包
 });
 //一直到这里结束<--------------------
 
-AV.Cloud.beforeUpdate('Material', function (request) {
-    console.log(request);
-    return request
+AV.Cloud.afterSave('_User', function (request) {
+
+    var teacher = AV.Object.createWithoutData('_Role', '5a76ada2ee920a0045e23e17');
+
+    // var user = new AV.Object('_User');
+    // user.set('username', 'wang');
+    // user.set('mobilePhoneNumber', '18710004250');
+    // user.set('mobilePhoneVerified', true);
+    // user.set('password', '452549');
+
+    var users = [request];
+    AV.Object.saveAll(users).then(function (value) {
+        var relation = teacher.relation('users');
+        users.map(relation.add.bind(relation));
+        return teacher.save();
+    }).then(function (value) {
+        console.log(value);
+        return '保存成功'
+    },function (reason) {
+        console.log(reason);
+        return reason
+    })
 });
 
 //这里是保存历史版本数据的hook函数---------->>>>>>
