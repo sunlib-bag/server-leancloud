@@ -273,6 +273,8 @@ AV.Cloud.afterSave('_User', function (request) {
     var query = new AV.Query('_User');
     return query.find().then(function (value) {
         console.log(value)
+    }, function (reason) {
+        console.log(reason)
     })
 
     // var teacher = AV.Object.createWithoutData('_Role', '5a76ada2ee920a0045e23e17');
