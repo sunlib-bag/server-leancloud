@@ -9,8 +9,11 @@ var archiver = require('archiver-promise');
  */
 AV.Cloud.define('hello', function (request) {
 
-    var user = request.params.user;
-    console.log(user);
+    var user1 = request.params.user;
+    console.log('request.params.user' + user1);
+
+    var user2 = request.currentUser;
+    console.log('request.currentUser' + user2);
 
     return 'Hello wangyongfei!';
 });
@@ -278,7 +281,7 @@ AV.Cloud.afterSave('_User', function (request) {
     users.map(relation.add.bind(relation));
     return teacher.save().then(function (value) {
         console.log(value)
-    },function (reason) {
+    }, function (reason) {
         console.log(reason)
     });
 
