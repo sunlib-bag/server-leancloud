@@ -78,11 +78,6 @@ AV.Cloud.define('pack', function (request) {   //打包
     manifestData.id = lesson_id;    //这里将课程id添加json
 
     //验证用户信息---------------->
-    var user = request.currentUser;
-    console.log('request.currentUser' + JSON.stringify(user));
-    console.log('用户手机号' + user.attributes.mobilePhoneNumber);
-
-
     var phonesArr = [];
     var admin = AV.Object.createWithoutData('_Role', '5a76ad890b61601d10938457');
     var relation = admin.relation('users');
@@ -91,6 +86,7 @@ AV.Cloud.define('pack', function (request) {   //打包
         results.forEach(function (data) {
             phonesArr.push(data.attributes.mobilePhoneNumber);
         });
+        var user = request.currentUser;
 
         console.log('phonesArr' + phonesArr);
 
@@ -105,6 +101,7 @@ AV.Cloud.define('pack', function (request) {   //打包
     }, function (error) {
     });
     //到这里结束<--------------------
+    queryAllData(manifestData, materials);
 
     function queryAllData(manifestData, materials) {
         // console.log('11开始查询该课程的数据');
@@ -138,28 +135,95 @@ AV.Cloud.define('pack', function (request) {   //打包
                     materialObj.file_index = material.attributes.index;
                     materials.push(materialObj)
                 }
+                if (dataLessonMaterials.length == i + 1) {
+                    if (materials.length == 0) {
+                        console.log('没有检测到material，直接打包上传教案');
+                        if (!fs.existsSync('download')) {
+                            fs.mkdirSync('download')
+                        }
+                        fs.rmrfSync(path.join('download', lesson_id + '-zip'));
+                        fs.mkdirSync(path.join('download', lesson_id + '-zip'));
+                        packPlan(manifestData)
+                    } else {
+                        // console.log(materials);
+                        // queryMaterialUrl(manifestData, materials)
+                        checkAlbumNum(manifestData, materials)
+                    }
+                }
             }
             // console.log('--1' + JSON.stringify(manifestData));
             // console.log('--2' + JSON.stringify(materials));
+            // console.log(materials)
 
-            if (materials.length == 0) {
-                console.log('没有检测到material，直接打包上传教案')
-                if (!fs.existsSync('download')) {
-                    fs.mkdirSync('download')
-                }
-                fs.rmrfSync(path.join('download', lesson_id + '-zip'));
-                fs.mkdirSync(path.join('download', lesson_id + '-zip'));
-                packPlan(manifestData)
-            } else {
-                queryMaterialUrl(manifestData, materials)
-            }
         })
     }
 
-    function queryMaterialUrl(manifestData, materials) {  //根据上边获取到的materials的id信息在Material的数据表中获取materials的信息
-        // console.log('33根据上边获取到的materials的id信息在Material的数据表中获取materials的信息');
+    function checkAlbumNum(manifestData, materials) {
+        // console.log('检查图集数量');
+        var albumsSign = [];
+        var len = [];
+        for (var i = 0; i < materials.length; i++) {
+            (function (i) {
+                var materialObj = materials[i];
+                var queryAlbumUrl = new AV.Query('Material');
+                queryAlbumUrl.get(materialObj.id).then(function (dataMaterialUrl) {
+                    len.push(materialObj.id);
+                    if (dataMaterialUrl.attributes.type == 0) {
+                        materialObj.name = dataMaterialUrl.attributes.name;
+                        materialObj.type = 'album';
+                        albumsSign.push(materialObj.id);
+                    }
+                    if (len.length == materials.length) {
+                        // console.log(albumsSign) 这里判断没有图集的情况
+                        if (albumsSign.length == 0) {
+                            var filesData = [];
+                            queryMaterialUrl(manifestData, materials, albumsSign, filesData)
+                        } else {
+                            getAlbum(albumsSign, manifestData, materials)
+                        }
+                    }
+                })
+            })(i);
+        }
+    }
+
+    function getAlbum(albumsSign, manifestData, materials) {
         var filesData = [];
-        var albumSign = [];　//图集标志
+        for (var i = 0; i < albumsSign.length; i++) {
+            (function (i) {
+                var albumId = albumsSign[i];
+                var queryMaterial = new AV.Query('Material');
+                queryMaterial.get(albumId).then(function (dataAlbum) {
+                    (function (i) {
+                        // console.log('------fenge ' + i);
+                        var query = new AV.Query('Material');
+                        query.equalTo('parent', dataAlbum);
+                        query.find().then(function (dataAlbums) {
+                            // console.log('------xinxi ' + dataAlbums.length);
+                            for (var j = 0; j < dataAlbums.length; j++) {
+                                var materialObj = {};
+                                materialObj.url = dataAlbums[j].attributes.file.attributes.url;
+                                materialObj.id = dataAlbums[j].id;
+                                materialObj.filename = dataAlbums[j].id;
+                                materialObj.parent = dataAlbums[j].attributes.parent.id;
+                                materialObj.album_index = dataAlbums[j].attributes.index;
+                                materialObj.type = dataAlbums[j].attributes.file.attributes.mime_type;
+                                filesData.push(materialObj)
+                            }
+                            if (albumsSign.length == i + 1) {
+                                // console.log(filesData)
+                                queryMaterialUrl(manifestData, materials, albumsSign, filesData)
+                            }
+                        })
+                    })(i);
+                })
+            })(i)
+        }
+    }
+
+    function queryMaterialUrl(manifestData, materials, albumsSign, filesData) {  //根据上边获取到的materials的id信息在Material的数据表中获取materials的信息
+        // console.log('33根据上边获取到的materials的id信息在Material的数据表中获取materials的信息');
+        console.log('检测到' + albumsSign.length + '个图集');
         for (var i = 0; i < materials.length; i++) {
             (function (i) {
                 var materialObj = materials[i];
@@ -170,24 +234,22 @@ AV.Cloud.define('pack', function (request) {   //打包
                     if (dataMaterialUrl.attributes.type == 0) {
                         materialObj.name = dataMaterialUrl.attributes.name;
                         materialObj.type = 'album';
-                        albumSign.push(materialObj.type);
                         filesData.push(materialObj);
-                        getAtlas(manifestData, filesData, dataMaterialUrl, albumSign)
+                        // console.log('----tuji')
+                        // getAtlas(manifestData, filesData, dataMaterialUrl, albumSign, albumsSign)
                     } else {
                         materialObj.url = dataMaterialUrl.attributes.file.attributes.url;
                         materialObj.filename = materialObj.id;
                         materialObj.type = dataMaterialUrl.attributes.file.attributes.mime_type;
                         filesData.push(materialObj);
+                        // console.log('----fei')
                     }
 
                     //这里将来要加上parent和album_index属性
 
-                    if (materials.length == filesData.length && albumSign.length == 0) {　　//没有图集会走这里
-                        console.log('没有检测到图集，开始下载文件');
+                    if (materials.length == i + 1) {　　//没有图集会走这里
                         manifestData.materials = filesData;
-                        // console.log('1-----' + JSON.stringify(filesData));
-                        // console.log('2-----'+JSON.stringify(manifestData));
-                        downloadFile(manifestData, filesData, albumSign);
+                        downloadFile(manifestData, filesData, albumsSign);
                     }
 
                 })
@@ -195,32 +257,8 @@ AV.Cloud.define('pack', function (request) {   //打包
         }
     }
 
-    function getAtlas(manifestData, filesData, atlas, albumSign) {
-        console.log('检测到图集，开始处理并下载文件');
-        var query = new AV.Query('Material');
-        query.equalTo('parent', atlas);
-        query.find().then(function (value) {
-            for (var j = 0; j < value.length; j++) {
-                var materialObj = {};
-                materialObj.url = value[j].attributes.file.attributes.url;
-                materialObj.id = value[j].id;
-                materialObj.filename = value[j].id;
-                materialObj.parent = value[j].attributes.parent.id;
-                materialObj.album_index = value[j].attributes.index;
-                materialObj.type = value[j].attributes.file.attributes.mime_type;
-                filesData.push(materialObj)
-            }
 
-            // console.log('××××××图集××××××' + JSON.stringify(filesData));
-            manifestData.materials = filesData;
-            downloadFile(manifestData, filesData, albumSign);    //有图集会走这里
-
-        }, function (reason) {
-            console.log(reason)
-        })
-    }
-
-    function downloadFile(manifestData, filesData, albumSign) {  //创建一个下载文件夹并清空该文件夹
+    function downloadFile(manifestData, filesData, albumsSign) {  //创建一个下载文件夹并清空该文件夹
         // console.log('44创建一个下载文件夹并清空该文件夹');
         if (!fs.existsSync('download')) {
             fs.mkdirSync('download')
@@ -233,13 +271,13 @@ AV.Cloud.define('pack', function (request) {   //打包
 
         // fs.writeFileSync('download/manifest.json', JSON.stringify(manifestData));
 
-        downloadData(manifestData, filesData, albumSign)
-        // beforePack(manifestData, filesData)
+        downloadData(manifestData, filesData, albumsSign)
     }
 
-    function downloadData(manifestData, filesData, albumSign) {  //开始根据获取到的materials的URL来下载materials
+    function downloadData(manifestData, filesData, albumsSign) {  //开始根据获取到的materials的URL来下载materials
         // console.log('55开始根据获取到的materials的URL来下载materials');
-        console.log(filesData);
+        // console.log(filesData);
+        console.log(filesData.length);
         var files = [];
         for (var i = 0; i < filesData.length; i++) {
             (function (i) {
@@ -250,9 +288,9 @@ AV.Cloud.define('pack', function (request) {   //打包
                         console.log('download' + JSON.stringify(file.url));
                         fs.writeFileSync(filename, data);
                         files.push(filename);
-                        if (filesData.length == files.length + 1 && albumSign.length > 0) {
+                        if (filesData.length == files.length + albumsSign.length && albumsSign.length > 0) {
                             pack(manifestData);
-                        } else if (filesData.length == files.length && albumSign.length == 0) {
+                        } else if (filesData.length == files.length && albumsSign.length == 0) {
                             pack(manifestData);
                         }
                     });

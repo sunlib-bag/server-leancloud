@@ -66,38 +66,6 @@ app.get('/test', function (req, res) {
     })
 });
 
-
-app.post('/pack', function (req, res) {
-    //这里对调用接口的用户进行验证----------->
-    console.log('检查---' + res);
-    // if (req.currentUser) {
-    var lessonFilesData = {
-        'lesson_id': req.query.lessonId
-    };
-    // startPack();
-    console.log('----看这里----' + req.currentUser);
-    res.send('pcackage is OK');
-    // } else {
-    // 没有登录，跳转到登录页面。
-    // res.send('Not logged in');
-    // }
-
-    function startPack() {
-        console.log('开始进入打包云函数' + JSON.stringify(lessonFilesData));
-        AV.Cloud.run('pack', lessonFilesData).then(
-            function (value) {
-                res.send(value)
-            }, function (error) {
-                console.log(error);
-                res.send(error)
-            }
-        )
-    }
-
-    //一直到这里 <-------
-
-});
-
 // 可以将一类的路由单独保存在一个文件中
 app.use('/todos', require('./routes/todos'));
 
