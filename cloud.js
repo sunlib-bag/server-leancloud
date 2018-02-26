@@ -9,11 +9,29 @@ var archiver = require('archiver-promise');
  */
 AV.Cloud.define('hello', function (request) {
 
-    var user1 = request.params.user;
-    console.log('request.params.user' + user1);
+    var user = request.currentUser;
+    console.log('request.currentUser' + JSON.stringify(user));
+    console.log('用户手机号' + user.attributes.mobilePhoneNumber);
 
-    var user2 = request.currentUser;
-    console.log('request.currentUser' + user2);
+
+    var phonesArr = [];
+    var admin = AV.Object.createWithoutData('_Role', '5a76ad890b61601d10938457');
+    var relation = admin.relation('users');
+    var query = relation.query();
+    query.find().then(function (results) {
+        results.forEach(function (data) {
+            phonesArr.push(data.attributes.mobilePhoneNumber);
+        });
+
+        console.log('phonesArr' + phonesArr);
+
+        if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
+            console.log('该用户是admin,可以发布课程')
+        } else {
+            console.log('用户没有权限发布课程')
+        }
+    }, function (error) {
+    });
 
     return 'Hello wangyongfei!';
 });
@@ -59,7 +77,34 @@ AV.Cloud.define('pack', function (request) {   //打包
     //这里开始查询该课程id下的所有内容---
     manifestData.id = lesson_id;    //这里将课程id添加json
 
-    // queryAllData(manifestData, materials);
+    //验证用户信息---------------->
+    var user = request.currentUser;
+    console.log('request.currentUser' + JSON.stringify(user));
+    console.log('用户手机号' + user.attributes.mobilePhoneNumber);
+
+
+    var phonesArr = [];
+    var admin = AV.Object.createWithoutData('_Role', '5a76ad890b61601d10938457');
+    var relation = admin.relation('users');
+    var query = relation.query();
+    query.find().then(function (results) {
+        results.forEach(function (data) {
+            phonesArr.push(data.attributes.mobilePhoneNumber);
+        });
+
+        console.log('phonesArr' + phonesArr);
+
+        if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
+            console.log('该用户是admin,可以发布课程');
+            queryAllData(manifestData, materials);
+            return 'pcackage is OK'
+        } else {
+            console.log('用户没有权限发布课程');
+            return 'user is not admin'
+        }
+    }, function (error) {
+    });
+    //到这里结束<--------------------
 
     function queryAllData(manifestData, materials) {
         // console.log('11开始查询该课程的数据');
@@ -268,7 +313,6 @@ AV.Cloud.define('pack', function (request) {   //打包
         })
     }
 
-    return 'pcackage is OK'
 });
 //一直到这里结束<--------------------
 
