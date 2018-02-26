@@ -87,7 +87,7 @@ AV.Cloud.define('pack', function (request) {   //打包
     var admin = AV.Object.createWithoutData('_Role', '5a76ad890b61601d10938457');
     var relation = admin.relation('users');
     var query = relation.query();
-    query.find().then(function (results) {
+    return query.find().then(function (results) {
         results.forEach(function (data) {
             phonesArr.push(data.attributes.mobilePhoneNumber);
         });
