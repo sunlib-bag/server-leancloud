@@ -67,7 +67,7 @@ app.get('/test', function (req, res) {
 });
 
 
-app.get('/pack', function (req, res) {
+app.post('/pack', function (req, res) {
     //这里对调用接口的用户进行验证----------->
     console.log('检查---' + res);
     // if (req.currentUser) {

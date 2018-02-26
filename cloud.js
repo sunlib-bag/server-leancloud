@@ -8,6 +8,10 @@ var archiver = require('archiver-promise');
  * 一个简单的云代码方法
  */
 AV.Cloud.define('hello', function (request) {
+
+    var user = request.params.user;
+    console.log(user);
+
     return 'Hello wangyongfei!';
 });
 
@@ -52,7 +56,7 @@ AV.Cloud.define('pack', function (request) {   //打包
     //这里开始查询该课程id下的所有内容---
     manifestData.id = lesson_id;    //这里将课程id添加json
 
-    queryAllData(manifestData, materials);
+    // queryAllData(manifestData, materials);
 
     function queryAllData(manifestData, materials) {
         // console.log('11开始查询该课程的数据');
