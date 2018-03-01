@@ -107,6 +107,7 @@ AV.Cloud.define('pack', function (request) {   //打包
         var queryAll = new AV.Query('Lesson');
         queryAll.get(lesson_id).then(function (dataAll) {
             var tags = dataAll.attributes.tags;
+            manifestData.tags = dataAll.attributes.tags;
             if(tags.length > 0){
                 tags.forEach(function (tag) {
                     if(tag.indexOf('source') != -1){
