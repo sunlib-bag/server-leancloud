@@ -101,19 +101,26 @@ AV.Cloud.define('pack', function (request) {   //打包
     }, function (error) {
     });
     //到这里结束<--------------------
-    queryAllData(manifestData, materials);
 
     function queryAllData(manifestData, materials) {
         // console.log('11开始查询该课程的数据');
         var queryAll = new AV.Query('Lesson');
         queryAll.get(lesson_id).then(function (dataAll) {
+            var tags = dataAll.attributes.tags;
+            if(tags.length > 0){
+                tags.forEach(function (tag) {
+                    if(tag.indexOf('source') != -1){
+                        console.log('来源　'+tag.split('.')[1]);
+                        manifestData.source = tag.split('.')[1]  //这里将source添加到json
+                    }
+                })
+            }
             var lessonPlan_id = dataAll.attributes.plan.id;
             //根据记录的lessonPlan_id查询课程下的lessonPlan
             var queryLessonPlan = new AV.Query('LessonPlan');
             queryLessonPlan.get(lessonPlan_id).then(function (dataLessonPlan) {
                 // console.log(dataLessonPlan.attributes.title);
 
-                manifestData.title = dataLessonPlan.attributes.title;   //这里将title添加到json
                 manifestData.content = dataLessonPlan.attributes.content;   //这里将content添加到json
                 manifestData.author = dataLessonPlan.attributes.author;    //这里将author添加到json
 
