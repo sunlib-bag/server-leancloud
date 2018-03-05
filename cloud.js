@@ -102,12 +102,14 @@ AV.Cloud.define('pack', function (request) {   //打包
     });
     //到这里结束<--------------------
 
-    function queryAllData(manifestData, materials) {
+    function queryAllData(manifestData, materials) {　　//根据传入的lesson_id查询Lesson表
         // console.log('11开始查询该课程的数据');
         var queryAll = new AV.Query('Lesson');
         queryAll.get(lesson_id).then(function (dataAll) {
+            manifestData.name = dataAll.attributes.name;  //这里将lesson_name添加到json
+            manifestData.version_code = dataAll.attributes.draft_version_code;
             var tags = dataAll.attributes.tags;
-            manifestData.tags = dataAll.attributes.tags;
+            manifestData.tags = dataAll.attributes.tags;　　//这里将tags添加到json
             if(tags.length > 0){
                 tags.forEach(function (tag) {
                     if(tag.indexOf('source') != -1){
@@ -125,6 +127,7 @@ AV.Cloud.define('pack', function (request) {   //打包
                 manifestData.content = dataLessonPlan.attributes.content;   //这里将content添加到json
                 manifestData.author = dataLessonPlan.attributes.author;    //这里将author添加到json
 
+                // console.log(manifestData)
                 queryLessonMaterialData(manifestData, materials);
             })
         })
@@ -154,15 +157,10 @@ AV.Cloud.define('pack', function (request) {   //打包
                         packPlan(manifestData)
                     } else {
                         // console.log(materials);
-                        // queryMaterialUrl(manifestData, materials)
                         checkAlbumNum(manifestData, materials)
                     }
                 }
             }
-            // console.log('--1' + JSON.stringify(manifestData));
-            // console.log('--2' + JSON.stringify(materials));
-            // console.log(materials)
-
         })
     }
 
@@ -337,25 +335,20 @@ AV.Cloud.define('pack', function (request) {   //打包
     function uploadZip(lesson_id) {  //上传课程压缩包到该课程的package域下
         fs.readFile('download/' + lesson_id + '.zip', function (err, data) {  //读取压缩包数据并上传文件
             var file = new AV.File(lesson_id + '.zip', data);
-            file.save().then(function (valueFile) {
-                // console.log(valueFile.id);
-                var query = new AV.Query('Lesson');   //查询该课程的当前信息并更新信息，将压缩包保存到当前id的lesson下
-                query.get(lesson_id).then(function (value1) {
-                    var draft_version_code = value1.attributes.draft_version_code;
-                    var update = AV.Object.createWithoutData('Lesson', lesson_id);
-                    update.set('version_code', draft_version_code);
-                    update.set('isPublished', true);
-                    update.set('package', {"__type": "File", "objectId": valueFile.id});
-                    update.save().then(function (value2) {
-                        console.log('成功保存');
-                    }, function (err) {
-                        console.log(err);
-                    });
-                })
+            var query = new AV.Query('Lesson');   //查询该课程的当前信息并更新信息，将压缩包保存到当前id的lesson下
+            query.get(lesson_id).then(function (value1) {
+                var draft_version_code = value1.attributes.draft_version_code;
+                var update = AV.Object.createWithoutData('Lesson', lesson_id);
+                update.set('version_code', draft_version_code);
+                update.set('isPublished', true);
+                update.set('package', file);
+                update.save().then(function (value2) {
+                    console.log('成功保存');
+                }, function (err) {
+                    console.log(err);
+                });
+            })
 
-            }, function (reason) {
-                console.log(reason);
-            });
         })
     }
 
