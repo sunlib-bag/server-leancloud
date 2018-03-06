@@ -100,6 +100,7 @@ AV.Cloud.define('pack', function (request) {   //打包
         }
     }, function (error) {
     });
+
     //到这里结束<--------------------
 
     function queryAllData(manifestData, materials) {　　//根据传入的lesson_id查询Lesson表
@@ -110,10 +111,10 @@ AV.Cloud.define('pack', function (request) {   //打包
             manifestData.version_code = dataAll.attributes.draft_version_code;
             var tags = dataAll.attributes.tags;
             manifestData.tags = dataAll.attributes.tags;　　//这里将tags添加到json
-            if(tags.length > 0){
+            if (tags.length > 0) {
                 tags.forEach(function (tag) {
-                    if(tag.indexOf('source') != -1){
-                        console.log('来源　'+tag.split('.')[1]);
+                    if (tag.indexOf('source') != -1) {
+                        console.log('来源　' + tag.split('.')[1]);
                         manifestData.source = tag.split('.')[1]  //这里将source添加到json
                     }
                 })
