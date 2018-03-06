@@ -71,10 +71,8 @@ AV.Cloud.define('pack', function (request) {   //打包
     console.log('开始执行查询获取课程数据！');
 
     var lesson_id = request.params.lesson_id;
-
     var manifestData = {};
     var materials = [];
-    //这里开始查询该课程id下的所有内容---
     manifestData.id = lesson_id;    //这里将课程id添加json
 
     //验证用户信息---------------->
@@ -87,9 +85,6 @@ AV.Cloud.define('pack', function (request) {   //打包
             phonesArr.push(data.attributes.mobilePhoneNumber);
         });
         var user = request.currentUser;
-
-        console.log('phonesArr' + phonesArr);
-
         if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
             console.log('该用户是admin,可以发布课程');
             queryAllData(manifestData, materials);
@@ -114,7 +109,6 @@ AV.Cloud.define('pack', function (request) {   //打包
             if (tags.length > 0) {
                 tags.forEach(function (tag) {
                     if (tag.indexOf('source') != -1) {
-                        console.log('来源　' + tag.split('.')[1]);
                         manifestData.source = tag.split('.')[1]  //这里将source添加到json
                     }
                 })
@@ -127,7 +121,6 @@ AV.Cloud.define('pack', function (request) {   //打包
 
                 manifestData.content = dataLessonPlan.attributes.content;   //这里将content添加到json
                 manifestData.author = dataLessonPlan.attributes.author;    //这里将author添加到json
-
                 // console.log(manifestData)
                 queryLessonMaterialData(manifestData, materials);
             })
@@ -202,11 +195,9 @@ AV.Cloud.define('pack', function (request) {   //打包
                 var queryMaterial = new AV.Query('Material');
                 queryMaterial.get(albumId).then(function (dataAlbum) {
                     (function (i) {
-                        // console.log('------fenge ' + i);
                         var query = new AV.Query('Material');
                         query.equalTo('parent', dataAlbum);
                         query.find().then(function (dataAlbums) {
-                            // console.log('------xinxi ' + dataAlbums.length);
                             for (var j = 0; j < dataAlbums.length; j++) {
                                 var materialObj = {};
                                 materialObj.url = dataAlbums[j].attributes.file.attributes.url;
@@ -214,6 +205,7 @@ AV.Cloud.define('pack', function (request) {   //打包
                                 materialObj.filename = dataAlbums[j].id;
                                 materialObj.parent = dataAlbums[j].attributes.parent.id;
                                 materialObj.album_index = dataAlbums[j].attributes.index;
+                                materialObj.albun_name = dataAlbums[j].attributes.name;
                                 materialObj.type = dataAlbums[j].attributes.file.attributes.mime_type;
                                 filesData.push(materialObj)
                             }
@@ -236,24 +228,17 @@ AV.Cloud.define('pack', function (request) {   //打包
                 var materialObj = materials[i];
                 var queryMaterialUrl = new AV.Query('Material');
                 queryMaterialUrl.get(materialObj.id).then(function (dataMaterialUrl) {
-                    // console.log('===看这里111===' + JSON.stringify(dataMaterialUrl));
-                    // console.log('===看这里111===' + JSON.stringify(dataMaterialUrl.attributes.name));
                     if (dataMaterialUrl.attributes.type == 0) {
                         materialObj.name = dataMaterialUrl.attributes.name;
                         materialObj.type = 'album';
                         filesData.push(materialObj);
-                        // console.log('----tuji')
-                        // getAtlas(manifestData, filesData, dataMaterialUrl, albumSign, albumsSign)
                     } else {
                         materialObj.url = dataMaterialUrl.attributes.file.attributes.url;
                         materialObj.filename = materialObj.id;
+                        materialObj.name = dataMaterialUrl.attributes.name;
                         materialObj.type = dataMaterialUrl.attributes.file.attributes.mime_type;
                         filesData.push(materialObj);
-                        // console.log('----fei')
                     }
-
-                    //这里将来要加上parent和album_index属性
-
                     if (materials.length == i + 1) {　　//没有图集会走这里
                         manifestData.materials = filesData;
                         downloadFile(manifestData, filesData, albumsSign);
@@ -276,15 +261,13 @@ AV.Cloud.define('pack', function (request) {   //打包
         fs.mkdirSync(path.join('download', lesson_id));
         fs.mkdirSync(path.join('download', lesson_id + '-zip'));
 
-        // fs.writeFileSync('download/manifest.json', JSON.stringify(manifestData));
-
         downloadData(manifestData, filesData, albumsSign)
     }
 
     function downloadData(manifestData, filesData, albumsSign) {  //开始根据获取到的materials的URL来下载materials
         // console.log('55开始根据获取到的materials的URL来下载materials');
         // console.log(filesData);
-        console.log(filesData.length);
+        console.log('materials数量　' + filesData.length);
         var files = [];
         for (var i = 0; i < filesData.length; i++) {
             (function (i) {
@@ -296,6 +279,7 @@ AV.Cloud.define('pack', function (request) {   //打包
                         fs.writeFileSync(filename, data);
                         files.push(filename);
                         if (filesData.length == files.length + albumsSign.length && albumsSign.length > 0) {
+                            console.log('已下载文件的个数　'　+ files.length);
                             pack(manifestData);
                         } else if (filesData.length == files.length && albumsSign.length == 0) {
                             pack(manifestData);
