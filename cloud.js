@@ -206,7 +206,8 @@ AV.Cloud.define('pack', function (request) {   //打包
                                 materialObj.parent = dataAlbums[j].attributes.parent.id;
                                 materialObj.album_index = dataAlbums[j].attributes.index;
                                 materialObj.album_name = dataAlbums[j].attributes.name;
-                                materialObj.type = dataAlbums[j].attributes.file.attributes.mime_type;
+                                materialObj.mime_type = dataAlbums[j].attributes.file.attributes.mime_type;
+                                materialObj.type = dataAlbums[j].attributes.type;
                                 filesData.push(materialObj)
                             }
                             if (albumsSign.length == i + 1) {
@@ -230,13 +231,15 @@ AV.Cloud.define('pack', function (request) {   //打包
                 queryMaterialUrl.get(materialObj.id).then(function (dataMaterialUrl) {
                     if (dataMaterialUrl.attributes.type == 0) {
                         materialObj.name = dataMaterialUrl.attributes.name;
-                        materialObj.type = 'album';
+                        materialObj.mime_type = 'album';
+                        materialObj.type = dataMaterialUrl.attributes.type;
                         filesData.push(materialObj);
                     } else {
                         materialObj.url = dataMaterialUrl.attributes.file.attributes.url;
                         materialObj.filename = materialObj.id;
                         materialObj.name = dataMaterialUrl.attributes.name;
-                        materialObj.type = dataMaterialUrl.attributes.file.attributes.mime_type;
+                        materialObj.mime_type = dataMaterialUrl.attributes.file.attributes.mime_type;
+                        materialObj.type = dataMaterialUrl.attributes.type;
                         filesData.push(materialObj);
                     }
                     if (materials.length == i + 1) {　　//没有图集会走这里
