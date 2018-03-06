@@ -205,7 +205,7 @@ AV.Cloud.define('pack', function (request) {   //打包
                                 materialObj.filename = dataAlbums[j].id;
                                 materialObj.parent = dataAlbums[j].attributes.parent.id;
                                 materialObj.album_index = dataAlbums[j].attributes.index;
-                                materialObj.albun_name = dataAlbums[j].attributes.name;
+                                materialObj.album_name = dataAlbums[j].attributes.name;
                                 materialObj.type = dataAlbums[j].attributes.file.attributes.mime_type;
                                 filesData.push(materialObj)
                             }
