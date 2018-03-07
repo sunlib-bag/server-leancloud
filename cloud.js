@@ -99,7 +99,7 @@ AV.Cloud.define('pack', function (request) {   //打包
     //到这里结束<--------------------
 
     function queryAllData(manifestData, materials) {　　//根据传入的lesson_id查询Lesson表
-        console.log('11开始查询该课程的数据');
+        // console.log('11开始查询该课程的数据');
         var queryAll = new AV.Query('Lesson');
         queryAll.get(lesson_id).then(function (dataAll) {
             manifestData.name = dataAll.attributes.name;  //这里将lesson_name添加到json
@@ -128,7 +128,7 @@ AV.Cloud.define('pack', function (request) {   //打包
     }
 
     function queryLessonMaterialData(manifestData, materials) {     //这里获取materials的id信息
-        console.log('22开始获取materials的id信息');
+        // console.log('22开始获取materials的id信息');
         var queryLessonMaterial = new AV.Query('LessonMaterial');
         queryLessonMaterial.find().then(function (dataLessonMaterials) {
             for (var i = 0; i < dataLessonMaterials.length; i++) {
