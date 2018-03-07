@@ -121,7 +121,7 @@ AV.Cloud.define('pack', function (request) {   //打包
 
                 manifestData.content = dataLessonPlan.attributes.content;   //这里将content添加到json
                 manifestData.author = dataLessonPlan.attributes.author;    //这里将author添加到json
-                console.log('从这里开始１－－' + JSON.stringify(manifestData));
+                // console.log('从这里开始１－－' + JSON.stringify(manifestData));
                 queryLessonMaterialData(manifestData, materials);
             })
         })
@@ -150,7 +150,7 @@ AV.Cloud.define('pack', function (request) {   //打包
                         fs.mkdirSync(path.join('download', lesson_id + '-zip'));
                         packPlan(manifestData)
                     } else {
-                        console.log('从这里开始２－materials的数量－' + materials.length);
+                        // console.log('从这里开始２－materials的数量－' + materials.length);
                         checkAlbumNum(manifestData, materials)
                     }
                 }
