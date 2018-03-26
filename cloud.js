@@ -64,12 +64,295 @@ AV.Cloud.define('requestSmsCode', function (request) {
 });
 //一直到这里结束<-------------
 
+//保存草稿云函数
+AV.Cloud.define('draftSave', function (request) {
+    //创建json文件，获取编辑者，保存snapshot
+});
 
-//这里是发布打包的云函数------------->
-AV.Cloud.define('pack', function (request) {   //打包
+//提交审核云函数
+AV.Cloud.define('submitAudit', function (request) {
+    //审核状态改为１，打包课程，获取编辑者，保存snapshot
+});
 
+//审核云函数（通过和未通过）
+AV.Cloud.define('checkLesson', function (request) {
+    //审核状态改为２或３，创建json文件，同步修改snapshot历史版本的审核状态为２或３
+});
+
+//发布云函数
+AV.Cloud.define('publish', function (request) {   //打包
     console.log('开始执行查询获取课程数据！');
+    var lesson_id = request.params.lesson_id;
+    var manifestData = {};
+    var materials = [];
+    manifestData.id = lesson_id;    //这里将课程id添加json
+    var complier = request.currentUser.getUsername();
 
+    //验证用户信息---------------->
+    var phonesArr = [];
+    var admin = AV.Object.createWithoutData('_Role', '5a76ad890b61601d10938457');
+    var relation = admin.relation('users');
+    var query = relation.query();
+    return query.find().then(function (results) {
+        results.forEach(function (data) {
+            phonesArr.push(data.attributes.mobilePhoneNumber);
+        });
+        var user = request.currentUser;
+        if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
+            queryAllData(manifestData, materials);
+            return 'pcackage is OK'
+        } else {
+            console.log('用户没有权限发布课程');
+            return 'user is not admin'
+        }
+    }, function (error) {
+    });
+
+    //到这里结束<--------------------
+
+    function queryAllData(manifestData, materials) {　　//根据传入的lesson_id查询Lesson表
+        var queryAll = new AV.Query('Lesson');
+        queryAll.get(lesson_id).then(function (dataAll) {
+            manifestData.name = dataAll.attributes.name;  //这里将lesson_name添加到json
+            manifestData.version_code = dataAll.attributes.draft_version_code;
+            var tags = dataAll.attributes.tags;
+            manifestData.tags = dataAll.attributes.tags;　　//这里将tags添加到json
+            if (tags.length > 0) {
+                tags.forEach(function (tag) {
+                    if (tag.indexOf('source') != -1) {
+                        manifestData.source = tag.split('.')[1]  //这里将source添加到json
+                    }
+                })
+            }
+            var lessonPlan_id = dataAll.attributes.plan.id;
+            //根据记录的lessonPlan_id查询课程下的lessonPlan
+            var queryLessonPlan = new AV.Query('LessonPlan');
+            queryLessonPlan.get(lessonPlan_id).then(function (dataLessonPlan) {
+                manifestData.content = dataLessonPlan.attributes.content;   //这里将content添加到json
+                manifestData.author = dataLessonPlan.attributes.author;    //这里将author添加到json
+                queryLessonMaterialData(manifestData, materials, dataAll);
+            })
+        })
+    }
+
+    function queryLessonMaterialData(manifestData, materials, lesson) {     //这里获取materials的id信息
+        var queryLessonMaterial = new AV.Query('LessonMaterial');
+        queryLessonMaterial.equalTo('lesson', lesson);
+        queryLessonMaterial.find().then(function (dataLessonMaterials) {
+            console.log(dataLessonMaterials.length);
+            if(dataLessonMaterials.length == 0){
+                console.log('没有检测到material，直接打包上传教案');
+                if (!fs.existsSync('download')) {
+                    fs.mkdirSync('download')
+                }
+                fs.rmrfSync(path.join('download', lesson_id + '-zip'));
+                fs.mkdirSync(path.join('download', lesson_id + '-zip'));
+                packPlan(manifestData)
+            }else {
+                for (var i = 0; i < dataLessonMaterials.length; i++) {
+                    var material = dataLessonMaterials[i];
+                    var materialObj = {};
+                    console.log('====');
+                    materialObj.id = material.attributes.material.id;
+                    materialObj.file_index = material.attributes.index;
+                    materials.push(materialObj);
+
+                    if (dataLessonMaterials.length == i + 1) {
+                        // console.log('materials的数量－' + materials.length);
+                        checkAlbumNum(manifestData, materials)
+                    }
+                }
+            }
+        })
+    }
+
+    function checkAlbumNum(manifestData, materials) {
+        // console.log('检查图集数量');
+        var albumsSign = [];
+        var len = [];
+        for (var i = 0; i < materials.length; i++) {
+            (function (i) {
+                var materialObj = materials[i];
+                var queryAlbumUrl = new AV.Query('Material');
+                queryAlbumUrl.get(materialObj.id).then(function (dataMaterialUrl) {
+                    len.push(materialObj.id);
+                    if (dataMaterialUrl.attributes.type == 0) {
+                        materialObj.name = dataMaterialUrl.attributes.name;
+                        materialObj.type = 'album';
+                        albumsSign.push(materialObj.id);
+                    }
+                    if (len.length == materials.length) {
+                        // console.log(albumsSign) 这里判断没有图集的情况
+                        if (albumsSign.length == 0) {
+                            var filesData = [];
+                            queryMaterialUrl(manifestData, materials, albumsSign, filesData)
+                        } else {
+                            // console.log('从这里开始３－图集数量－' + albumsSign.length);
+                            // console.log('从这里开始４－materials数量－' + materials.length);
+                            getAlbum(albumsSign, manifestData, materials)
+                        }
+                    }
+                })
+            })(i);
+        }
+    }
+
+    function getAlbum(albumsSign, manifestData, materials) {
+        var filesData = [];
+        for (var i = 0; i < albumsSign.length; i++) {
+            (function (i) {
+                var albumId = albumsSign[i];
+                var queryMaterial = new AV.Query('Material');
+                queryMaterial.get(albumId).then(function (dataAlbum) {
+                    (function (i) {
+                        var query = new AV.Query('Material');
+                        query.equalTo('parent', dataAlbum);
+                        query.find().then(function (dataAlbums) {
+                            for (var j = 0; j < dataAlbums.length; j++) {
+                                var materialObj = {};
+                                materialObj.url = dataAlbums[j].attributes.file.attributes.url;
+                                materialObj.id = dataAlbums[j].id;
+                                materialObj.filename = dataAlbums[j].id;
+                                materialObj.parent = dataAlbums[j].attributes.parent.id;
+                                materialObj.album_index = dataAlbums[j].attributes.index;
+                                materialObj.album_name = dataAlbums[j].attributes.name;
+                                materialObj.mime_type = dataAlbums[j].attributes.file.attributes.mime_type;
+                                materialObj.type = dataAlbums[j].attributes.type;
+                                filesData.push(materialObj)
+                            }
+                            if (albumsSign.length == i + 1) {
+                                queryMaterialUrl(manifestData, materials, albumsSign, filesData)
+                            }
+                        })
+                    })(i);
+                })
+            })(i)
+        }
+    }
+
+    function queryMaterialUrl(manifestData, materials, albumsSign, filesData) {  //根据上边获取到的materials的id信息在Material的数据表中获取materials的信息
+        console.log('检测到' + albumsSign.length + '个图集');
+        var materialsSign = [];
+        for (var i = 0; i < materials.length; i++) {
+            (function (i) {
+                var materialObj = materials[i];
+                var queryMaterialUrl = new AV.Query('Material');
+                queryMaterialUrl.get(materialObj.id).then(function (dataMaterialUrl) {
+                    if (dataMaterialUrl.attributes.type == 0) {
+                        materialObj.name = dataMaterialUrl.attributes.name;
+                        materialObj.mime_type = 'album';
+                        materialObj.type = dataMaterialUrl.attributes.type;
+                    } else {
+                        materialObj.url = dataMaterialUrl.attributes.file.attributes.url;
+                        materialObj.filename = materialObj.id;
+                        materialObj.name = dataMaterialUrl.attributes.name;
+                        materialObj.mime_type = dataMaterialUrl.attributes.file.attributes.mime_type;
+                        materialObj.type = dataMaterialUrl.attributes.type;
+                    }
+                    filesData.push(materialObj);
+                    materialsSign.push(materialObj);
+                    if (materials.length == materialsSign.length) {
+                        manifestData.materials = filesData;
+                        downloadFile(manifestData, filesData, albumsSign);
+                    }
+
+                })
+            })(i);
+        }
+    }
+
+    function downloadFile(manifestData, filesData, albumsSign) {  //创建一个下载文件夹并清空该文件夹
+        if (!fs.existsSync('download')) {
+            fs.mkdirSync('download')
+        }
+        fs.rmrfSync(path.join('download', lesson_id));
+        fs.rmrfSync(path.join('download', lesson_id + '-zip'));
+        fs.rmrfSync(path.join('download', lesson_id + '.zip'));
+        fs.mkdirSync(path.join('download', lesson_id));
+        fs.mkdirSync(path.join('download', lesson_id + '-zip'));
+        downloadData(manifestData, filesData, albumsSign)
+    }
+
+    function downloadData(manifestData, filesData, albumsSign) {  //开始根据获取到的materials的URL来下载materials
+        // console.log(filesData);
+        console.log('materials数量　' + filesData.length);
+        var files = [];
+        for (var i = 0; i < filesData.length; i++) {
+            (function (i) {
+                var file = filesData[i];
+                var filename = path.join('download', lesson_id, file.id);
+                if (file.url) {
+                    download(file.url).then(function (data) {  //下载完成之后的回调
+                        console.log('download' + JSON.stringify(file.url));
+                        fs.writeFileSync(filename, data);
+                        files.push(filename);
+                        if (filesData.length == files.length + albumsSign.length && albumsSign.length > 0) {
+                            console.log('已下载文件的个数　' + files.length);
+                            pack(manifestData);
+                        } else if (filesData.length == files.length && albumsSign.length == 0) {
+                            pack(manifestData);
+                        }
+                    });
+                }
+            })(i)
+        }
+    }
+
+    function packPlan(manifestData) {  //这里对没有素材的课程进行打包
+        fs.writeFileSync(path.join('download', lesson_id + '-zip', 'manifest.json'), JSON.stringify(manifestData));
+        var archive = archiver(path.join('download', lesson_id + '.zip'), {
+            store: true
+        });
+        archive.file('download/' + lesson_id + '-zip/' + 'manifest.json', {name: 'manifest.json'});
+        archive.finalize().then(function () {
+            console.log('教案打包成功！开始上传文件！');
+            uploadZip(lesson_id)
+        })
+    }
+
+    function pack(manifestData) {  //现在开始对该课程的所有数据进行打包
+        fs.writeFileSync(path.join('download', lesson_id + '-zip', 'manifest.json'), JSON.stringify(manifestData));
+        console.log('现在开始归档文件！');
+        var archive = archiver(path.join('download', lesson_id + '.zip'), {
+            store: true
+        });
+        archive.directory('download/' + lesson_id, 'materials');
+        archive.file('download/' + lesson_id + '-zip/' + 'manifest.json', {name: 'manifest.json'});
+        archive.finalize().then(function () {
+            console.log('课程打包成功！开始上传文件！');
+            uploadZip(lesson_id);
+        })
+    }
+
+    function uploadZip(lesson_id) {  //上传课程压缩包到该课程的package域下
+        fs.readFile('download/' + lesson_id + '.zip', function (err, data) {  //读取压缩包数据并上传文件
+            fs.readFile('download/' + lesson_id + '-zip/manifest.json', function (err, data1) {
+                var file = new AV.File(lesson_id + '.zip', data);
+                var file1 = new AV.File(lesson_id + '_manifest.json', data1);
+
+                var query = new AV.Query('Lesson');   //查询该课程的当前信息并更新信息，将压缩包保存到当前id的lesson下
+                query.get(lesson_id).then(function (value1) {
+                    var draft_version_code = value1.attributes.draft_version_code;
+                    var update = AV.Object.createWithoutData('Lesson', lesson_id); //保存到Lesson
+                    update.set('version_code', draft_version_code);
+                    update.set('isPublished', true);
+                    update.set('package', file);
+                    // update.set('manifest_json', file1);
+                    update.set('complier', complier);
+                    update.save().then(function (value3) {
+                        console.log('成功保存');
+                        getSnapshot(lesson_id);
+                    }, function (err) {
+                        console.log(err);
+                    });
+                })
+            });
+        })
+    }
+
+});
+AV.Cloud.define('pack', function (request) {   //打包
+    console.log('开始执行查询获取课程数据！');
     var lesson_id = request.params.lesson_id;
     var manifestData = {};
     var materials = [];
@@ -122,35 +405,35 @@ AV.Cloud.define('pack', function (request) {   //打包
                 manifestData.content = dataLessonPlan.attributes.content;   //这里将content添加到json
                 manifestData.author = dataLessonPlan.attributes.author;    //这里将author添加到json
                 // console.log('从这里开始１－－' + JSON.stringify(manifestData));
-                queryLessonMaterialData(manifestData, materials);
+                queryLessonMaterialData(manifestData, materials, dataAll);
             })
         })
     }
 
-    function queryLessonMaterialData(manifestData, materials) {     //这里获取materials的id信息
-        // console.log('22开始获取materials的id信息');
+    function queryLessonMaterialData(manifestData, materials, lesson) {     //这里获取materials的id信息
         var queryLessonMaterial = new AV.Query('LessonMaterial');
+        queryLessonMaterial.equalTo('lesson', lesson);
         queryLessonMaterial.find().then(function (dataLessonMaterials) {
-            for (var i = 0; i < dataLessonMaterials.length; i++) {
-                // console.log(i)
-                var material = dataLessonMaterials[i];
-                var materialObj = {};
-                if (material.attributes.lesson.id == lesson_id) {
+            console.log(dataLessonMaterials.length);
+            if(dataLessonMaterials.length == 0){
+                console.log('没有检测到material，直接打包上传教案');
+                if (!fs.existsSync('download')) {
+                    fs.mkdirSync('download')
+                }
+                fs.rmrfSync(path.join('download', lesson_id + '-zip'));
+                fs.mkdirSync(path.join('download', lesson_id + '-zip'));
+                packPlan(manifestData)
+            }else {
+                for (var i = 0; i < dataLessonMaterials.length; i++) {
+                    var material = dataLessonMaterials[i];
+                    var materialObj = {};
+                    console.log('====');
                     materialObj.id = material.attributes.material.id;
                     materialObj.file_index = material.attributes.index;
-                    materials.push(materialObj)
-                }
-                if (dataLessonMaterials.length == i + 1) {
-                    if (materials.length == 0) {
-                        console.log('没有检测到material，直接打包上传教案');
-                        if (!fs.existsSync('download')) {
-                            fs.mkdirSync('download')
-                        }
-                        fs.rmrfSync(path.join('download', lesson_id + '-zip'));
-                        fs.mkdirSync(path.join('download', lesson_id + '-zip'));
-                        packPlan(manifestData)
-                    } else {
-                        // console.log('从这里开始２－materials的数量－' + materials.length);
+                    materials.push(materialObj);
+
+                    if (dataLessonMaterials.length == i + 1) {
+                        // console.log('materials的数量－' + materials.length);
                         checkAlbumNum(manifestData, materials)
                     }
                 }
@@ -246,7 +529,7 @@ AV.Cloud.define('pack', function (request) {   //打包
                     }
                     filesData.push(materialObj);
                     materialsSign.push(materialObj);
-                    if (materials.length == materialsSign.length) {　　
+                    if (materials.length == materialsSign.length) {
                         manifestData.materials = filesData;
                         downloadFile(manifestData, filesData, albumsSign);
                     }
@@ -345,7 +628,38 @@ AV.Cloud.define('pack', function (request) {   //打包
     }
 
 });
-//一直到这里结束<--------------------
+
+//下架云函数
+AV.Cloud.define('cancelRelease', function (request) {
+    //保存当前课程的状态到snapshot
+});
+
+function getSnapshot(lesson_id) {
+    var query = new AV.Query('Lesson');
+    query.get(lesson_id).then(function (value) {
+        var HistoryLesson = AV.Object.extend('LessonSnapshot');
+        var historyLesson = new HistoryLesson();
+        console.log('编辑者- ' + value.attributes.complier);
+        console.log('课程id-- ' + lesson_id);
+        console.log('发布状态- ' + value.attributes.isPublished);
+        console.log('审核状态- ' + value.attributes.isChecked);
+        console.log('草稿版本- ' + value.attributes.draft_version_code);
+        console.log('发布版本- ' + value.attributes.version_code);
+        historyLesson.set('lessonId', lesson_id); //课程id
+        historyLesson.set('isPublished', value.attributes.isPublished); //发布状态
+        historyLesson.set('isChecked', value.attributes.isChecked); //审核状态
+        historyLesson.set('draft_version_code', value.attributes.draft_version_code); //草稿版本
+        historyLesson.set('version_code', value.attributes.version_code); //发布版本
+        historyLesson.set('package', value.attributes.package); //课程zip包
+        historyLesson.set('manifest_json', value.attributes.manifest_json); //课程json文件
+        historyLesson.set('complier', value.attributes.complier); //编辑者
+        historyLesson.save().then(function (value2) {
+            console.log('课程历史版本已保存！');
+        }, function (reason) {
+            console.log(reason);
+        })
+    });
+}
 
 //新注册的用户默认创建teacher角色的hook函数
 AV.Cloud.afterSave('_User', function (request) {
@@ -363,36 +677,49 @@ AV.Cloud.afterSave('_User', function (request) {
 });
 
 //这里是保存历史版本数据的hook函数---------->>>>>>
-AV.Cloud.afterSave('Lesson', function (request) {
-    console.log('--afterSave');
-    var query = new AV.Query('Lesson');
-    return query.get(request.object.id).then(function (value) {
-        var draft_version_code = value.attributes.draft_version_code;
-        var update = AV.Object.createWithoutData('Lesson', request.object.id);
-        update.set('draft_version_code', draft_version_code);
-        update.save()
-
-    }, function (error) {
-        console.log(error)
-    });
-});
-
-AV.Cloud.afterUpdate('Lesson', function (request) {
-    console.log('--afterUpdate');
-    var query = new AV.Query('Lesson');
-    // console.log(request.object);
-    return query.get(request.object.id).then(function (value) {
-        // console.log('----保存的数据------' + JSON.stringify(value.attributes));
-        var HistoryLesson = AV.Object.extend('LessonSnapshot');
-        var historyLesson = new HistoryLesson();
-        historyLesson.set('data', value.attributes);
-        historyLesson.save().then(function (value2) {
-            console.log(value2.id)
-        }, function (reason) {
-            console.log(reason);
-        })
-    });
-});
+// AV.Cloud.afterSave('Lesson', function (request) {
+//     console.log('--afterSave');
+//     var query = new AV.Query('Lesson');
+//     return query.get(request.object.id).then(function (value) {
+//         var draft_version_code = value.attributes.draft_version_code;
+//         var update = AV.Object.createWithoutData('Lesson', request.object.id);
+//         update.set('draft_version_code', draft_version_code);
+//         update.save()
+//
+//     }, function (error) {
+//         console.log(error)
+//     });
+// });
+//
+// AV.Cloud.afterUpdate('Lesson', function (request) {
+//     console.log('--afterUpdate');
+//     var query = new AV.Query('Lesson');
+//     return query.get(request.object.id).then(function (value) {
+//         var HistoryLesson = AV.Object.extend('LessonSnapshot');
+//         var historyLesson = new HistoryLesson();
+//         console.log('编辑者- ' + request.currentUser.getUsername());
+//         console.log('课程id-- '+request.object.id);
+//         console.log('发布状态- ' +value.attributes.isPublished);
+//         console.log('审核状态- ' + value.attributes.isChecked);
+//         console.log('草稿版本- ' + value.attributes.draft_version_code);
+//         console.log('发布版本- ' + value.attributes.version_code);
+//         console.log('zip包- ' + value.attributes.package);
+//         historyLesson.set('lessonId', request.object.id); //课程id
+//         historyLesson.set('isPublished', value.attributes.isPublished); //发布状态
+//         historyLesson.set('isChecked', value.attributes.isChecked); //审核状态
+//         historyLesson.set('draft_version_code', value.attributes.draft_version_code); //草稿版本
+//         historyLesson.set('version_code', value.attributes.version_code); //发布版本
+//         historyLesson.set('package', value.attributes.package); //课程zip包
+//         historyLesson.set('manifest_json', value.attributes.manifest_json); //课程json文件
+//         historyLesson.set('complier', request.currentUser.getUsername()); //编辑者
+//         historyLesson.set('data', value.attributes); //原来的数据，现在属于脏数据，等待删除
+//         historyLesson.save().then(function (value2) {
+//             console.log('课程历史版本已保存！');
+//         }, function (reason) {
+//             console.log(reason);
+//         })
+//     });
+// });
 //<<<<<<------------------一直到这里
 
 
