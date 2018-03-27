@@ -492,7 +492,7 @@ AV.Cloud.define('submitAudit', function (request) {
 //审核未通过云函数
 AV.Cloud.define('notThrough', function (request) {
     //审核状态改为2，同步修改snapshot历史版本的审核状态为2
-    var lesson_id = request.params.lesson_id;
+    var snapshot_id = request.params.snapshot_id;
     var status_code = 2;
     //验证用户信息---------------->
     var phonesArr = [];
@@ -505,9 +505,9 @@ AV.Cloud.define('notThrough', function (request) {
         });
         var user = request.currentUser;
         if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
-            checkLesson(lesson_id, status_code);
-            console.log('审核未通过！');
-            return 200
+            console.log('===');
+            console.log('未通过！');
+            return checkLesson(snapshot_id, status_code);
         } else {
             console.log('用户没有权限');
             return 401
@@ -521,7 +521,7 @@ AV.Cloud.define('notThrough', function (request) {
 //审核通过云函数
 AV.Cloud.define('isApproved', function (request) {
     //审核状态改为3，创建json文件，同步修改snapshot历史版本的审核状态为3
-    var lesson_id = request.params.lesson_id;
+    var snapshot_id = request.params.snapshot_id;
     var status_code = 3;
     //验证用户信息---------------->
     var phonesArr = [];
@@ -534,9 +534,10 @@ AV.Cloud.define('isApproved', function (request) {
         });
         var user = request.currentUser;
         if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
-            checkLesson(lesson_id, status_code);
-            console.log('审核通过！');
-            return 200
+            console.log('===');
+            console.log('通过！');
+            return checkLesson(snapshot_id, status_code);
+            // return 200
         } else {
             console.log('用户没有权限');
             return 401
@@ -1192,25 +1193,26 @@ function cancelRelease(lesson_id) { //下架并同步到历史版本
     })
 }
 
-function checkLesson(lesson_id, status_code) { //审核课程并且将审核状态同步到历史版本
-    var query = new AV.Query('Lesson');
-    query.get(lesson_id).then(function (value) {
+function checkLesson(snapshot_id, status_code) { //审核课程并且将审核状态同步到历史版本
+    var query = new AV.Query('LessonSnapshot');
+    return query.get(snapshot_id).then(function (value) {
+        var lesson_id = value.attributes.lessonId;
         var draft_version_code = value.attributes.draft_version_code;
-        var update = AV.Object.createWithoutData('Lesson', lesson_id);
-        update.set('isChecked', status_code);
-        update.save();
-        var snapshotQuery = new AV.Query('LessonSnapshot');
-        snapshotQuery.equalTo('lessonId', lesson_id);
-        snapshotQuery.equalTo('draft_version_code', draft_version_code);
-        snapshotQuery.find().then(function (value2) {
-            console.log(value2[0].id);
-            var snapshotId = value2[0].id;
-            var snapshotUpdate = AV.Object.createWithoutData('LessonSnapshot', snapshotId); //同步到snapshot
-            snapshotUpdate.set('isChecked', status_code);
-            snapshotUpdate.save().then(function (value3) {
-                console.log('审核完成！')
+        var snapshotUpdate = AV.Object.createWithoutData('LessonSnapshot', snapshot_id); //同步到snapshot
+        snapshotUpdate.set('isChecked', status_code);
+        return snapshotUpdate.save().then(function (value3) {
+            console.log('审核完成！');
+            console.log('===');
+            var lessonQuery = new AV.Query('Lesson');
+            lessonQuery.get(lesson_id).then(function (value2) {
+                if(draft_version_code == value2.attributes.draft_version_code){
+                    var update = AV.Object.createWithoutData('Lesson', lesson_id);
+                    update.set('isChecked', status_code);
+                    update.save();
+                }
             });
-        })
+            return value3;
+        });
     })
 }
 
@@ -1219,12 +1221,6 @@ function getSnapshot(lesson_id, isChecked) { //保存课程的历史版本
     query.get(lesson_id).then(function (value) {
         var HistoryLesson = AV.Object.extend('LessonSnapshot');
         var historyLesson = new HistoryLesson();
-        console.log('编辑者- ' + value.attributes.complier);
-        console.log('课程id-- ' + lesson_id);
-        console.log('发布状态- ' + value.attributes.isPublished);
-        console.log('审核状态- ' + value.attributes.isChecked);
-        console.log('草稿版本- ' + value.attributes.draft_version_code);
-        console.log('发布版本- ' + value.attributes.version_code);
         historyLesson.set('lessonId', lesson_id); //课程id
         historyLesson.set('isPublished', value.attributes.isPublished); //发布状态
         if (isChecked == 3) {
