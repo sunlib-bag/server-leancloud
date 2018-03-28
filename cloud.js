@@ -201,6 +201,7 @@ AV.Cloud.define('draftSave', function (request) {
             query.get(lesson_id).then(function (value1) {
                 var update = AV.Object.createWithoutData('Lesson', lesson_id); //保存到Lesson
                 update.set('manifest_json', file1);
+                update.set('isChecked', 0);
                 update.set('complier', complier);
                 update.save().then(function (value3) {
                     console.log('成功保存');
@@ -236,9 +237,7 @@ AV.Cloud.define('submitAudit', function (request) {
         });
         var user = request.currentUser;
         if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
-            draftVersionCodeControl(lesson_id, function () {
-                queryAllData(manifestData, materials);
-            });
+            queryAllData(manifestData, materials);
             return 200
         } else {
             console.log('用户没有权限');
@@ -570,9 +569,7 @@ AV.Cloud.define('publish', function (request) {   //打包
         });
         var user = request.currentUser;
         if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
-            draftVersionCodeControl(lesson_id, function () {
-                queryAllData(manifestData, materials);
-            });
+            queryAllData(manifestData, materials);
             return 200
         } else {
             console.log('用户没有权限');
