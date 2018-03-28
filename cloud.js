@@ -604,6 +604,7 @@ AV.Cloud.define('publish', function (request) {   //打包
         var snapshotQuery = new AV.Query('LessonSnapshot');
         snapshotQuery.equalTo('lessonId', lesson_id);
         snapshotQuery.equalTo('draft_version_code', draft_version_code);
+        snapshotQuery.greaterThan('isChecked', 0);
         snapshotQuery.find().then(function (value2) {
             var snapshotId = value2[0].id;
             var package = value2[0].staging_package;
@@ -1170,7 +1171,42 @@ AV.Cloud.define('cancelRelease', function (request) {
     });
 });
 
-function draftVersionCodeControl(lesson_id, cb) { //草稿版本号控制
+
+//测试限制提交逻辑
+// AV.Cloud.define('test', function (request) {
+//     // var lesson_id = request.params.lesson_id;
+//     // var complier = request.currentUser.getUsername();
+//     //验证用户信息---------------->
+//     var phonesArr = [];
+//     var admin1 = AV.Object.createWithoutData('_Role', '5ab6000d17d0096887783cd6');
+//     var relation = admin1.relation('users');
+//     var query = relation.query();
+//     return query.find().then(function (results) {
+//         results.forEach(function (data) {
+//             phonesArr.push(data.attributes.mobilePhoneNumber);
+//         });
+//         var user = request.currentUser;
+//         if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
+//             // LimitedSubmit(lesson_id, complier);
+//             var result = {'result': 200, 'data': {}};
+//             return result
+//         } else {
+//             console.log('用户没有权限');
+//             var result = {'result': 401, 'data': {}};
+//             return result
+//         }
+//     }, function (error) {
+//         console.log(error)
+//     });
+// });
+
+//编辑一天提交两次审核限制
+// function LimitedSubmit(lesson_id, complier) {
+//     var snapshotQuery = new AV.Query('')
+// }
+
+//草稿版本号控制
+function draftVersionCodeControl(lesson_id, cb) {
     var lessonQuery = new AV.Query('Lesson');
     lessonQuery.get(lesson_id).then(function (value) {
         var draft_version_code = value.attributes.draft_version_code;
@@ -1182,7 +1218,8 @@ function draftVersionCodeControl(lesson_id, cb) { //草稿版本号控制
     });
 }
 
-function cancelRelease(lesson_id) { //下架并同步到历史版本
+//下架并同步到历史版本
+function cancelRelease(lesson_id) {
     var lessonUpdate = AV.Object.createWithoutData('Lesson', lesson_id);
     lessonUpdate.set('isPublished', false);
     lessonUpdate.save();
@@ -1204,7 +1241,8 @@ function cancelRelease(lesson_id) { //下架并同步到历史版本
     })
 }
 
-function checkLesson(snapshot_id, status_code) { //审核课程并且将审核状态同步到历史版本
+//审核课程并且将审核状态同步到历史版本
+function checkLesson(snapshot_id, status_code) {
     var query = new AV.Query('LessonSnapshot');
     return query.get(snapshot_id).then(function (value) {
         var lesson_id = value.attributes.lessonId;
@@ -1228,7 +1266,8 @@ function checkLesson(snapshot_id, status_code) { //审核课程并且将审核�
     })
 }
 
-function getSnapshot(lesson_id, isChecked) { //保存课程的历史版本
+//保存课程的历史版本
+function getSnapshot(lesson_id, isChecked) {
     var query = new AV.Query('Lesson');
     query.get(lesson_id).then(function (value) {
         var HistoryLesson = AV.Object.extend('LessonSnapshot');
