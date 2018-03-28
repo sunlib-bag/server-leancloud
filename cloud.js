@@ -239,9 +239,7 @@ AV.Cloud.define('submitAudit', function (request) {
         });
         var user = request.currentUser;
         if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
-            queryAllData(manifestData, materials);
-            var result = {'result': 200, 'data': {}};
-            return result
+            return LimitedSubmit(lesson_id, complier, manifestData, materials);
         } else {
             console.log('用户没有权限');
             var result = {'result': 401, 'data': {}};
@@ -251,6 +249,33 @@ AV.Cloud.define('submitAudit', function (request) {
     });
 
     //到这里结束<--------------------
+    function LimitedSubmit(lesson_id, complier, manifestData, materials) { //限制提交审核次数
+        var snapshotDates = [];
+        var nowDate = new Date();
+        var date = JSON.stringify(nowDate).slice(1, 11);
+        var snapshotQuery = new AV.Query('LessonSnapshot');
+        snapshotQuery.equalTo('lessonId', lesson_id);
+        snapshotQuery.equalTo('complier', complier);
+        snapshotQuery.greaterThan('isChecked', 0);
+        return snapshotQuery.find().then(function (value) {
+            for (var i = 0; i < value.length; i++) {
+                var snapshotDate = JSON.stringify(value[i].updatedAt);
+                if(snapshotDate.indexOf(date) != -1){
+                    snapshotDates.push(snapshotDate);
+                }
+            }
+            if(snapshotDates.length >= 20){
+                console.log('今日提交审核次数已达到上限');
+                var result = {'result': 403, 'data': {}};
+                return result
+            }else {
+                console.log('可以继续提交审核');
+                queryAllData(manifestData, materials);
+                var result = {'result': 200, 'data': {}};
+                return result
+            }
+        })
+    }
 
     function queryAllData(manifestData, materials) {　　//根据传入的lesson_id查询Lesson表
         var queryAll = new AV.Query('Lesson');
@@ -1171,39 +1196,6 @@ AV.Cloud.define('cancelRelease', function (request) {
     });
 });
 
-
-//测试限制提交逻辑
-// AV.Cloud.define('test', function (request) {
-//     // var lesson_id = request.params.lesson_id;
-//     // var complier = request.currentUser.getUsername();
-//     //验证用户信息---------------->
-//     var phonesArr = [];
-//     var admin1 = AV.Object.createWithoutData('_Role', '5ab6000d17d0096887783cd6');
-//     var relation = admin1.relation('users');
-//     var query = relation.query();
-//     return query.find().then(function (results) {
-//         results.forEach(function (data) {
-//             phonesArr.push(data.attributes.mobilePhoneNumber);
-//         });
-//         var user = request.currentUser;
-//         if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
-//             // LimitedSubmit(lesson_id, complier);
-//             var result = {'result': 200, 'data': {}};
-//             return result
-//         } else {
-//             console.log('用户没有权限');
-//             var result = {'result': 401, 'data': {}};
-//             return result
-//         }
-//     }, function (error) {
-//         console.log(error)
-//     });
-// });
-
-//编辑一天提交两次审核限制
-// function LimitedSubmit(lesson_id, complier) {
-//     var snapshotQuery = new AV.Query('')
-// }
 
 //草稿版本号控制
 function draftVersionCodeControl(lesson_id, cb) {
