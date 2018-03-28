@@ -29,11 +29,11 @@ AV.Cloud.define('draftSave', function (request) {
             draftVersionCodeControl(lesson_id, function () {
                 queryAllData(manifestData, materials);
             });
-            var result = {'result': 200};
+            var result = {'result': 200, 'data': {}};
             return result
         } else {
             console.log('用户没有权限');
-            var result = {'result': 401};
+            var result = {'result': 401, 'data': {}};
             return result
         }
     }, function (error) {
@@ -240,11 +240,11 @@ AV.Cloud.define('submitAudit', function (request) {
         var user = request.currentUser;
         if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
             queryAllData(manifestData, materials);
-            var result = {'result': 200};
+            var result = {'result': 200, 'data': {}};
             return result
         } else {
             console.log('用户没有权限');
-            var result = {'result': 401};
+            var result = {'result': 401, 'data': {}};
             return result
         }
     }, function (error) {
@@ -514,7 +514,7 @@ AV.Cloud.define('notThrough', function (request) {
             return checkLesson(snapshot_id, status_code);
         } else {
             console.log('用户没有权限');
-            var result = {'result': 401};
+            var result = {'result': 401, 'data': {}};
             return result
         }
     }, function (error) {
@@ -544,7 +544,7 @@ AV.Cloud.define('isApproved', function (request) {
             return checkLesson(snapshot_id, status_code);
         } else {
             console.log('用户没有权限');
-            var result = {'result': 401};
+            var result = {'result': 401, 'data': {}};
             return result
         }
     }, function (error) {
@@ -574,11 +574,11 @@ AV.Cloud.define('publish', function (request) {   //打包
         var user = request.currentUser;
         if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
             queryAllData(manifestData, materials);
-            var result = {'result': 200};
+            var result = {'result': 200, 'data': {}};
             return result
         } else {
             console.log('用户没有权限');
-            var result = {'result': 401};
+            var result = {'result': 401, 'data': {}};
             return result
         }
     }, function (error) {
@@ -1158,11 +1158,11 @@ AV.Cloud.define('cancelRelease', function (request) {
         var user = request.currentUser;
         if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
             cancelRelease(lesson_id);
-            var result = {'result': 200};
+            var result = {'result': 200, 'data': {}};
             return result
         } else {
             console.log('用户没有权限');
-            var result = {'result': 401};
+            var result = {'result': 401, 'data': {}};
             return result
         }
     }, function (error) {
