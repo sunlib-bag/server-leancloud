@@ -184,6 +184,7 @@ AV.Cloud.define('draftSave', function (request) {
     }
 
     function creatJsonFile(manifestData) {
+        console.log('创建json文件');
         if (!fs.existsSync('download')) {
             fs.mkdirSync('download')
         }
@@ -600,6 +601,7 @@ AV.Cloud.define('publish', function (request) {   //打包
         snapshotQuery.equalTo('lessonId', lesson_id);
         snapshotQuery.equalTo('draft_version_code', draft_version_code);
         snapshotQuery.find().then(function (value2) {
+            var snapshotId = value2[0].id;
             var package = value2[0].staging_package;
             var lessonUpdate = AV.Object.createWithoutData('Lesson', lesson_id); //同步到Lesson
             lessonUpdate.set('package', package);
@@ -608,6 +610,10 @@ AV.Cloud.define('publish', function (request) {   //打包
             lessonUpdate.save().then(function (value3) {
                 console.log('发布完成！');
             });
+
+            var snapshotUpdate = AV.Object.createWithoutData('LessonSnapshot', snapshotId);
+            snapshotUpdate.set('isPublished', true);
+            snapshotUpdate.save();
         })
     }
 
@@ -1158,7 +1164,6 @@ AV.Cloud.define('cancelRelease', function (request) {
     });
 });
 
-
 function draftVersionCodeControl(lesson_id, cb) { //草稿版本号控制
     var lessonQuery = new AV.Query('Lesson');
     lessonQuery.get(lesson_id).then(function (value) {
@@ -1222,10 +1227,11 @@ function getSnapshot(lesson_id, isChecked) { //保存课程的历史版本
         var HistoryLesson = AV.Object.extend('LessonSnapshot');
         var historyLesson = new HistoryLesson();
         historyLesson.set('lessonId', lesson_id); //课程id
-        historyLesson.set('isPublished', value.attributes.isPublished); //发布状态
         if (isChecked == 3) {
             historyLesson.set('isChecked', isChecked); //审核状态
+            historyLesson.set('isPublished', value.attributes.isPublished); //发布状态
         } else {
+            historyLesson.set('isPublished', false);
             historyLesson.set('isChecked', value.attributes.isChecked); //审核状态
         }
         historyLesson.set('draft_version_code', value.attributes.draft_version_code); //草稿版本
