@@ -29,10 +29,12 @@ AV.Cloud.define('draftSave', function (request) {
             draftVersionCodeControl(lesson_id, function () {
                 queryAllData(manifestData, materials);
             });
-            return 200
+            var result = {'result': 200};
+            return result
         } else {
             console.log('用户没有权限');
-            return 401
+            var result = {'result': 401};
+            return result
         }
     }, function (error) {
     });
@@ -238,10 +240,12 @@ AV.Cloud.define('submitAudit', function (request) {
         var user = request.currentUser;
         if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
             queryAllData(manifestData, materials);
-            return 200
+            var result = {'result': 200};
+            return result
         } else {
             console.log('用户没有权限');
-            return 401
+            var result = {'result': 401};
+            return result
         }
     }, function (error) {
     });
@@ -510,7 +514,8 @@ AV.Cloud.define('notThrough', function (request) {
             return checkLesson(snapshot_id, status_code);
         } else {
             console.log('用户没有权限');
-            return 401
+            var result = {'result': 401};
+            return result
         }
     }, function (error) {
         console.log(error)
@@ -537,10 +542,10 @@ AV.Cloud.define('isApproved', function (request) {
             console.log('===');
             console.log('通过！');
             return checkLesson(snapshot_id, status_code);
-            // return 200
         } else {
             console.log('用户没有权限');
-            return 401
+            var result = {'result': 401};
+            return result
         }
     }, function (error) {
         console.log(error)
@@ -556,7 +561,6 @@ AV.Cloud.define('publish', function (request) {   //打包
     var manifestData = {};
     var materials = [];
     manifestData.id = lesson_id;    //这里将课程id添加json
-    var complier = request.currentUser.getUsername();
 
     //验证用户信息---------------->
     var phonesArr = [];
@@ -570,12 +574,15 @@ AV.Cloud.define('publish', function (request) {   //打包
         var user = request.currentUser;
         if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
             queryAllData(manifestData, materials);
-            return 200
+            var result = {'result': 200};
+            return result
         } else {
             console.log('用户没有权限');
-            return 401
+            var result = {'result': 401};
+            return result
         }
     }, function (error) {
+        console.log(error)
     });
 
     //到这里结束<--------------------
@@ -583,7 +590,7 @@ AV.Cloud.define('publish', function (request) {   //打包
     function queryAllData(manifestData, materials) {　　//根据传入的lesson_id查询Lesson表
         var queryAll = new AV.Query('Lesson');
         queryAll.get(lesson_id).then(function (dataAll) {
-            if (draft_version_code + 1 < dataAll.attributes.draft_version_code) {
+            if (draft_version_code < dataAll.attributes.draft_version_code) {
                 //发布历史版本的课程包
                 queryLessonSnapshot(lesson_id, draft_version_code);
             } else {
@@ -1151,10 +1158,12 @@ AV.Cloud.define('cancelRelease', function (request) {
         var user = request.currentUser;
         if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
             cancelRelease(lesson_id);
-            return 200
+            var result = {'result': 200};
+            return result
         } else {
             console.log('用户没有权限');
-            return 401
+            var result = {'result': 401};
+            return result
         }
     }, function (error) {
         console.log(error)
@@ -1207,13 +1216,14 @@ function checkLesson(snapshot_id, status_code) { //审核课程并且将审核�
             console.log('===');
             var lessonQuery = new AV.Query('Lesson');
             lessonQuery.get(lesson_id).then(function (value2) {
-                if(draft_version_code == value2.attributes.draft_version_code){
+                if (draft_version_code == value2.attributes.draft_version_code) {
                     var update = AV.Object.createWithoutData('Lesson', lesson_id);
                     update.set('isChecked', status_code);
                     update.save();
                 }
             });
-            return value3;
+            var result = {'result': 200, 'data': value3};
+            return result;
         });
     })
 }
