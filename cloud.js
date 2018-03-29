@@ -260,18 +260,18 @@ AV.Cloud.define('submitAudit', function (request) {
         return snapshotQuery.find().then(function (value) {
             for (var i = 0; i < value.length; i++) {
                 var snapshotDate = JSON.stringify(value[i].updatedAt);
-                if(snapshotDate.indexOf(date) != -1){
+                if (snapshotDate.indexOf(date) != -1) {
                     snapshotDates.push(snapshotDate);
                 }
             }
-            if(snapshotDates.length >= 20){
+            if (snapshotDates.length >= 20) {
                 console.log('今日提交审核次数已达到上限');
                 var result = {'result': 403, 'data': {}};
                 return result
-            }else {
+            } else {
                 console.log('可以继续提交审核');
                 queryAllData(manifestData, materials);
-                var result = {'result': 200, 'data': {}};
+                var result = {'result': 200, 'data': {'submitNumber': snapshotDates.length}};
                 return result
             }
         })
@@ -500,6 +500,7 @@ AV.Cloud.define('submitAudit', function (request) {
 
                 var query = new AV.Query('Lesson');   //查询该课程的当前信息并更新信息，将压缩包保存到当前id的lesson下
                 query.get(lesson_id).then(function (value1) {
+                    var draft_version_code = value1.attributes.draft_version_code;
                     var update = AV.Object.createWithoutData('Lesson', lesson_id); //保存到Lesson
                     update.set('isChecked', 1);
                     update.set('staging_package', file);
@@ -507,8 +508,19 @@ AV.Cloud.define('submitAudit', function (request) {
                     update.set('complier', complier);
                     update.save().then(function (value3) {
                         console.log('成功保存');
-                        var isChecked = 1;
-                        getSnapshot(lesson_id, isChecked);
+                        var snapshotQuery = new AV.Query('LessonSnapshot');
+                        snapshotQuery.equalTo('lessonId', lesson_id);
+                        snapshotQuery.equalTo('draft_version_code', draft_version_code);
+                        snapshotQuery.find().then(function (value) {
+                            var snapshotId = value[0].id;
+                            var snapshotUpdate = AV.Object.createWithoutData('LessonSnapshot', snapshotId); //同步到snapshot
+                            snapshotUpdate.set('isPublished', false);
+                            snapshotUpdate.set('isChecked', 1);
+
+                            snapshotUpdate.save().then(function (value3) {
+                                console.log('同步历史版本完成！')
+                            });
+                        })
                     }, function (err) {
                         console.log(err);
                     });
@@ -867,16 +879,29 @@ AV.Cloud.define('publish', function (request) {   //打包
 
                 var query = new AV.Query('Lesson');   //查询该课程的当前信息并更新信息，将压缩包保存到当前id的lesson下
                 query.get(lesson_id).then(function (value1) {
-                    var draft_version_code = value1.attributes.draft_version_code;
+                    var version_code = value1.attributes.draft_version_code;
                     var update = AV.Object.createWithoutData('Lesson', lesson_id); //保存到Lesson
-                    update.set('version_code', draft_version_code);
+                    update.set('version_code', version_code);
                     update.set('isPublished', true);
+                    update.set('isChecked', 3);
                     update.set('package', file);
                     update.set('manifest_json', file1);
                     update.save().then(function (value3) {
                         console.log('成功保存');
-                        var isChecked = 3;
-                        getSnapshot(lesson_id, isChecked);
+                        // publishSnapshot(lesson_id, draft_version_code);
+                        var snapshotQuery = new AV.Query('LessonSnapshot');
+                        snapshotQuery.equalTo('lessonId', lesson_id);
+                        snapshotQuery.equalTo('draft_version_code', draft_version_code);
+                        snapshotQuery.find().then(function (value) {
+                            var snapshotId = value[0].id;
+                            var snapshotUpdate = AV.Object.createWithoutData('LessonSnapshot', snapshotId); //同步到snapshot
+                            snapshotUpdate.set('isPublished', true);
+                            snapshotUpdate.set('isChecked', 3);
+                            snapshotUpdate.set('version_code', draft_version_code);
+                            snapshotUpdate.save().then(function (value3) {
+                                console.log('发布完成！')
+                            });
+                        })
                     }, function (err) {
                         console.log(err);
                     });
@@ -1221,6 +1246,7 @@ function cancelRelease(lesson_id) {
         var snapshotQuery = new AV.Query('LessonSnapshot');
         snapshotQuery.equalTo('lessonId', lesson_id);
         snapshotQuery.equalTo('draft_version_code', draft_version_code);
+        snapshotQuery.greaterThan('isChecked', 0);
         snapshotQuery.find().then(function (value2) {
             console.log(value2[0].id);
             var snapshotId = value2[0].id;
@@ -1265,14 +1291,9 @@ function getSnapshot(lesson_id, isChecked) {
         var HistoryLesson = AV.Object.extend('LessonSnapshot');
         var historyLesson = new HistoryLesson();
         historyLesson.set('lessonId', lesson_id); //课程id
-        if (isChecked == 3) {
-            historyLesson.set('isChecked', isChecked); //审核状态
-            historyLesson.set('isPublished', value.attributes.isPublished); //发布状态
-        } else {
-            historyLesson.set('isPublished', false);
-            historyLesson.set('isChecked', value.attributes.isChecked); //审核状态
-        }
-        historyLesson.set('draft_version_code', value.attributes.draft_version_code); //草稿版本
+        historyLesson.set('isChecked', isChecked); //***审核状态
+        historyLesson.set('isPublished', false); //***发布状态
+        historyLesson.set('draft_version_code', value.attributes.draft_version_code); //***草稿版本
         historyLesson.set('version_code', value.attributes.version_code); //发布版本
         historyLesson.set('staging_package', value.attributes.staging_package); //提交审核暂存包
         historyLesson.set('package', value.attributes.package); //课程zip包
