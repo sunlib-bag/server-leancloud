@@ -271,7 +271,7 @@ AV.Cloud.define('submitAudit', function (request) {
             } else {
                 console.log('可以继续提交审核');
                 queryAllData(manifestData, materials);
-                var result = {'result': 200, 'data': {'submitNumber': snapshotDates.length}};
+                var result = {'result': 200, 'data': {'submitNumber': snapshotDates.length + 1}};
                 return result
             }
         })
