@@ -264,7 +264,7 @@ AV.Cloud.define('submitAudit', function (request) {
                     snapshotDates.push(snapshotDate);
                 }
             }
-            if (snapshotDates.length >= 20) {
+            if (snapshotDates.length >= 2) {
                 console.log('今日提交审核次数已达到上限');
                 var result = {'result': 403, 'data': {}};
                 return result
@@ -1309,24 +1309,24 @@ function getSnapshot(lesson_id, isChecked) {
 
 //新注册的用户默认创建teacher角色的hook函数
 AV.Cloud.afterSave('_User', function (request) {
-    // console.log('设置当前用户为teacher');
-    // var teacher = AV.Object.createWithoutData('_Role', '5a76ada2ee920a0045e23e17');
-    // var users1 = [request.object];
-    // var relation1 = teacher.relation('users');
-    // users1.map(relation1.add.bind(relation1));
-    // return teacher.save().then(function (value1) {
-    //     console.log(value1)
-    // }, function (reason1) {
-    //     console.log(reason1)
-    // });
-    console.log('设置当前用户为admin2');
-    var admin2 = AV.Object.createWithoutData('_Role', '5ab6001dac502e57c949a142');
-    var users2 = [request.object];
-    var relation2 = admin2.relation('users');
-    users2.map(relation2.add.bind(relation2));
-    return admin2.save().then(function (value2) {
-        console.log(value2)
-    }, function (reason2) {
-        console.log(reason2)
+    console.log('设置当前用户为teacher');
+    var teacher = AV.Object.createWithoutData('_Role', '5a76ada2ee920a0045e23e17');
+    var users1 = [request.object];
+    var relation1 = teacher.relation('users');
+    users1.map(relation1.add.bind(relation1));
+    return teacher.save().then(function (value1) {
+        console.log(value1)
+    }, function (reason1) {
+        console.log(reason1)
     });
+    // console.log('设置当前用户为admin2');
+    // var admin2 = AV.Object.createWithoutData('_Role', '5ab6001dac502e57c949a142');
+    // var users2 = [request.object];
+    // var relation2 = admin2.relation('users');
+    // users2.map(relation2.add.bind(relation2));
+    // return admin2.save().then(function (value2) {
+    //     console.log(value2)
+    // }, function (reason2) {
+    //     console.log(reason2)
+    // });
 });
