@@ -899,7 +899,7 @@ AV.Cloud.define('publish', function (request) {   //打包
                             snapshotUpdate.set('isChecked', 3);
                             snapshotUpdate.set('version_code', draft_version_code);
                             snapshotUpdate.save().then(function (value3) {
-                                console.log('发布完成！')
+                                console.log('同步到历史版本！')
                             });
                         })
                     }, function (err) {
@@ -1246,7 +1246,6 @@ function cancelRelease(lesson_id) {
         var snapshotQuery = new AV.Query('LessonSnapshot');
         snapshotQuery.equalTo('lessonId', lesson_id);
         snapshotQuery.equalTo('draft_version_code', draft_version_code);
-        snapshotQuery.greaterThan('isChecked', 0);
         snapshotQuery.find().then(function (value2) {
             console.log(value2[0].id);
             var snapshotId = value2[0].id;
