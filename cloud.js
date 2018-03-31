@@ -203,7 +203,7 @@ AV.Cloud.define('draftSave', function (request) {
             query.get(lesson_id).then(function (value1) {
                 var update = AV.Object.createWithoutData('Lesson', lesson_id); //保存到Lesson
                 update.set('manifest_json', file1);
-                update.set('isChecked', 0);
+                // update.set('isChecked', 0);
                 update.set('complier', complier);
                 update.save().then(function (value3) {
                     console.log('成功保存');
