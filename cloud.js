@@ -3,6 +3,133 @@ var download = require('download');
 var fs = require('fs.extra');
 var path = require('path');
 var archiver = require('archiver-promise');
+var xlsx = require('node-xlsx');
+var requests = require("request");
+var md5 = require('md5');
+
+
+//创建leancloud、classin账号
+AV.Cloud.define('registration', function (request) {
+
+    var excelFileId = request.params.file_id;
+
+    //验证用户信息---------------->
+    var phonesArr = [];
+    var admin = AV.Object.createWithoutData('_Role', '5a76ad890b61601d10938457');
+    var relation = admin.relation('users');
+    var query = relation.query();
+    return query.find().then(function (results) {
+        results.forEach(function (data) {
+            phonesArr.push(data.attributes.mobilePhoneNumber);
+        });
+        var user = request.currentUser;
+        if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
+            console.log('该用户是admin,可以创建用户');
+            getExcelData();
+            var result = {'result': 200, 'data': {}};
+            return result
+        } else {
+            console.log('用户没有权限');
+            var result = {'result': 401, 'data': {}};
+            return result
+        }
+    }, function (error) {
+    });
+
+    //读取表格用户信息
+    function getExcelData() {
+
+        console.log('开始获取excel文件数据-');
+        var excelFileId = '5ad5ee13a22b9d0045fc5e88';
+        var excelDataQuery = new AV.Query('_File');
+        var excelFileName = path.join('download', 'excelFile', excelFileId + '.xlsx');
+        excelDataQuery.get(excelFileId).then(function (value) {
+            console.log('开始下载文件');
+            download(value.attributes.url).then(function (data) {
+                console.log('下载excel文件成功');
+                fs.writeFileSync(excelFileName, data);
+                console.log('写入excel文件成功,开始读取文件');
+
+                //这里是一个查询，查询当前用户有没有注册
+                var userQuery = new AV.Query('_User');
+                userQuery.find().then(function (value2) {
+                    var usersPhoneArr = [];
+                    value2.forEach(function (userData) {
+                        usersPhoneArr.push(userData.attributes.mobilePhoneNumber);
+                    });
+                    console.log(usersPhoneArr.length);
+                    //读取excel文件内容
+                    var obj = xlsx.parse(excelFileName);
+                    var users = obj[0].data;
+                    for (var i = 1; i < users.length; i++) {
+                        var userName = users[i][6];
+                        var phoneNum = users[i][8];
+                        createClassInUser(phoneNum);
+                        if (usersPhoneArr.indexOf(phoneNum) == -1) {
+                            createLeanUser(userName, phoneNum);
+                        }
+                    }
+                });
+            })
+        })
+    }
+
+    //创建leancloud用户
+    function createLeanUser(userName, phoneNum) {
+        console.log('开始创建新用户');
+        var teacher = AV.Object.createWithoutData('_Role', '5a76ada2ee920a0045e23e17');
+        var name = userName;
+        var password = '123456';
+        var mobilePhoneNumber = phoneNum;
+
+        var user1 = new AV.Object('_User');
+        user1.set('username', name);
+        user1.set('password', password);
+        user1.set('mobilePhoneNumber', mobilePhoneNumber);
+
+        var users = [user1];
+        AV.Object.saveAll(users).then(function () {
+            var relation1 = teacher.relation('users');
+            users.map(relation1.add.bind(relation1));
+            teacher.save().then(function (value1) {
+                console.log('成功创建盒子用户。')
+            }, function (reason1) {
+                console.log(reason1)
+            });
+        });
+    }
+
+    //创建classin用户
+    function createClassInUser(phoneNum) {
+        var mobilePhoneNum = phoneNum;
+        var dateTime = new Date().getTime();
+        var timeStamp = Math.floor(dateTime / 1000);
+        var safeKey = md5('cnFQHt8g' + timeStamp);
+
+        var options = {
+            method: 'POST',
+            url: 'http://www.eeo.cn/partner/api/course.api.php',
+            qs: {action: 'register'},
+            headers:
+                {
+                    'content-type': 'application/x-www-form-urlencoded'
+                },
+            form:
+                {
+                    SID: '1318838',
+                    safeKey: safeKey,
+                    timeStamp: timeStamp,
+                    telephone: mobilePhoneNum,
+                    password: '123456',
+                }
+        };
+        requests(options, function (error, response, body) {
+            if (error) throw new Error(error);
+            console.log('创建classin用户成功');
+            // console.log(body);
+        });
+    }
+});
 
 //保存草稿云函数
 AV.Cloud.define('draftSave', function (request) {
@@ -1319,14 +1446,4 @@ AV.Cloud.afterSave('_User', function (request) {
     }, function (reason1) {
         console.log(reason1)
     });
-    // console.log('设置当前用户为admin2');
-    // var admin2 = AV.Object.createWithoutData('_Role', '5ab6001dac502e57c949a142');
-    // var users2 = [request.object];
-    // var relation2 = admin2.relation('users');
-    // users2.map(relation2.add.bind(relation2));
-    // return admin2.save().then(function (value2) {
-    //     console.log(value2)
-    // }, function (reason2) {
-    //     console.log(reason2)
-    // });
 });
