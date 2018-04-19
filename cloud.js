@@ -12,7 +12,7 @@ var md5 = require('md5');
 AV.Cloud.define('registration', function (request) {
 
     var excelFileId = request.params.file_id;
-
+    console.log(excelFileId);
     //验证用户信息---------------->
     var phonesArr = [];
     var admin = AV.Object.createWithoutData('_Role', '5a76ad890b61601d10938457');
@@ -25,7 +25,7 @@ AV.Cloud.define('registration', function (request) {
         var user = request.currentUser;
         if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
             console.log('该用户是admin,可以创建用户');
-            getExcelData();
+            getExcelData(excelFileId);
             var result = {'result': 200, 'data': {}};
             return result
         } else {
@@ -37,7 +37,7 @@ AV.Cloud.define('registration', function (request) {
     });
 
     //读取表格用户信息
-    function getExcelData() {
+    function getExcelData(excelFileId) {
 
         console.log('开始获取excel文件数据-');
         // var excelFileId = '5ad5ee13a22b9d0045fc5e88';
