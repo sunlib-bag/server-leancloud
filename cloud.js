@@ -40,7 +40,7 @@ AV.Cloud.define('registration', function (request) {
     function getExcelData() {
 
         console.log('开始获取excel文件数据-');
-        var excelFileId = '5ad5ee13a22b9d0045fc5e88';
+        // var excelFileId = '5ad5ee13a22b9d0045fc5e88';
         var excelDataQuery = new AV.Query('_File');
         var excelFileName = path.join('download', 'excelFile', excelFileId + '.xlsx');
         excelDataQuery.get(excelFileId).then(function (value) {
