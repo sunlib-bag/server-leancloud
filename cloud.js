@@ -12,7 +12,6 @@ var md5 = require('md5');
 AV.Cloud.define('registration', function (request) {
 
     var excelFileId = request.params.excelFileId;
-    console.log(excelFileId);
     //验证用户信息---------------->
     var phonesArr = [];
     var admin = AV.Object.createWithoutData('_Role', '5a76ad890b61601d10938457');
@@ -48,7 +47,7 @@ AV.Cloud.define('registration', function (request) {
             download(value.attributes.url).then(function (data) {
                 console.log('下载excel文件成功');
                 fs.writeFileSync(excelFileName, data);
-                console.log('写入excel文件成功,开始读取文件');
+                console.log('创建excel文件成功,开始读取文件');
 
                 //这里是一个查询，查询当前用户有没有注册
                 var userQuery = new AV.Query('_User');
