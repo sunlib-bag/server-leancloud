@@ -11,7 +11,7 @@ var md5 = require('md5');
 //创建leancloud、classin账号
 AV.Cloud.define('registration', function (request) {
 
-    var excelFileId = request.params.file_id;
+    var excelFileId = request.params.excelFileId;
     console.log(excelFileId);
     //验证用户信息---------------->
     var phonesArr = [];
