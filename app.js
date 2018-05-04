@@ -37,15 +37,15 @@ app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
 
 //设置多个域名跨域请求
-app.all('*', function(req, res, next) {
-    if( req.headers.origin == 'http://sl-bag.leanapp.cn/' || req.headers.origin == 'http://sl-bag-test.leanapp.cn/' ){
-        res.header("Access-Control-Allow-Origin", req.headers.origin);
-        res.header('Access-Control-Allow-Methods', 'POST, GET');
-        res.header('Access-Control-Allow-Headers', 'X-Requested-With');
-        res.header('Access-Control-Allow-Headers', 'Content-Type');
-    }
-    next();
-});
+// app.all('*', function(req, res, next) {
+//     if( req.headers.origin == 'http://sl-bag.leanapp.cn/' || req.headers.origin == 'http://sl-bag-test.leanapp.cn/' ){
+//         res.header("Access-Control-Allow-Origin", req.headers.origin);
+//         res.header('Access-Control-Allow-Methods', 'POST, GET');
+//         res.header('Access-Control-Allow-Headers', 'X-Requested-With');
+//         res.header('Access-Control-Allow-Headers', 'Content-Type');
+//     }
+//     next();
+// });
 
 app.get('/', function (req, res) {
     res.render('../public/index.html');
