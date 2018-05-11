@@ -139,7 +139,7 @@ AV.Cloud.define('draftSave', function (request) {
     var manifestData = {};
     var materials = [];
     manifestData.id = lesson_id;    //这里将课程id添加json
-    var complier = request.currentUser.getUsername();
+    var compiler = request.currentUser.getUsername();
 
     //验证用户信息---------------->
     var phonesArr = [];
@@ -330,7 +330,7 @@ AV.Cloud.define('draftSave', function (request) {
                 var update = AV.Object.createWithoutData('Lesson', lesson_id); //保存到Lesson
                 update.set('manifest_json', file1);
                 // update.set('isChecked', 0);
-                update.set('complier', complier);
+                update.set('compiler', compiler);
                 update.save().then(function (value3) {
                     console.log('成功保存');
                     var isChecked = 0;
@@ -352,7 +352,7 @@ AV.Cloud.define('submitAudit', function (request) {
     var manifestData = {};
     var materials = [];
     manifestData.id = lesson_id;    //这里将课程id添加json
-    var complier = request.currentUser.getUsername();
+    var compiler = request.currentUser.getUsername();
 
     //验证用户信息---------------->
     var phonesArr = [];
@@ -365,7 +365,7 @@ AV.Cloud.define('submitAudit', function (request) {
         });
         var user = request.currentUser;
         if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
-            return LimitedSubmit(lesson_id, complier, manifestData, materials);
+            return LimitedSubmit(lesson_id, compiler, manifestData, materials);
         } else {
             console.log('用户没有权限');
             var result = {'result': 401, 'data': {}};
@@ -375,13 +375,13 @@ AV.Cloud.define('submitAudit', function (request) {
     });
 
     //到这里结束<--------------------
-    function LimitedSubmit(lesson_id, complier, manifestData, materials) { //限制提交审核次数
+    function LimitedSubmit(lesson_id, compiler, manifestData, materials) { //限制提交审核次数
         var snapshotDates = [];
         var nowDate = new Date();
         var date = JSON.stringify(nowDate).slice(1, 11);
         var snapshotQuery = new AV.Query('LessonSnapshot');
         snapshotQuery.equalTo('lessonId', lesson_id);
-        snapshotQuery.equalTo('complier', complier);
+        snapshotQuery.equalTo('compiler', compiler);
         snapshotQuery.greaterThan('isChecked', 0);
         return snapshotQuery.find().then(function (value) {
             for (var i = 0; i < value.length; i++) {
@@ -631,7 +631,7 @@ AV.Cloud.define('submitAudit', function (request) {
                     update.set('isChecked', 1);
                     update.set('staging_package', file);
                     update.set('manifest_json', file1);
-                    update.set('complier', complier);
+                    update.set('compiler', compiler);
                     update.save().then(function (value3) {
                         console.log('成功保存');
                         var snapshotQuery = new AV.Query('LessonSnapshot');
@@ -1066,6 +1066,75 @@ AV.Cloud.define('cancelRelease', function (request) {
     });
 });
 
+//收藏
+AV.Cloud.define('collection', function (request) {
+
+    //获取数据
+    var collectionActionArr = request.params.collectionActionArr;
+    console.log(collectionActionArr);
+
+    //获取当前用户
+    var currentUser = request.currentUser;
+    // console.log(currentUser);
+
+    //创建新的favourite对象
+    var FavouriteObj = AV.Object.extend('Favourite');
+
+    //根据该用户查询favourite中的收藏信息
+    var collectionQuery = new AV.Query('Favourite');
+    collectionQuery.equalTo('user', currentUser);
+    return collectionQuery.find().then(function (value) {
+        //如果该用户没有收藏过任何课程
+        if (value.length == 0) {
+            var favouriteArr = [];
+            for (var i = 0; i < collectionActionArr.length; i++) {
+                var favouriteObj = new FavouriteObj();
+                favouriteObj.set('user', currentUser);
+                favouriteObj.set('lessonId', collectionActionArr[i].lessonId);
+                favouriteObj.set('lastModificationTime', collectionActionArr[i].lastModificationTime);
+                favouriteObj.set('action', collectionActionArr[i].action);
+                favouriteArr.push(favouriteObj);
+            }
+            AV.Object.saveAll(favouriteArr);
+            return {status: true, data: {}}
+        }
+        //该用户收藏过课程
+        else {
+            //获取所有已经收藏课程的id
+            var collectedLessonIdArr = [];
+            for (var j = 0; j < value.length; j++) {
+                collectedLessonIdArr.push(value[j].attributes.lessonId)
+            }
+
+            for (var z = 0; z < collectionActionArr.length; z++) {
+                //如果当前课程id有收藏记录
+                if (collectedLessonIdArr.indexOf(collectionActionArr[z].lessonId) !== -1) {
+                    for (var a = 0; a < value.length; a++) {
+                        //如果传入课程id时间晚于记录时间
+                        if (collectionActionArr[z].lessonId = value[a].attributes.lessonId && collectionActionArr[z].lastModificationTime >= value[a].attributes.lastModificationTime) {
+                            var updateCollection = AV.Object.createWithoutData('Favourite', value[a].id);
+                            updateCollection.set('lastModificationTime', collectionActionArr[z].lastModificationTime);
+                            updateCollection.set('action', collectionActionArr[z].action);
+                            updateCollection.save();
+                        }
+                    }
+                }
+                //如果当前课程id没有收藏记录
+                else {
+                    var favouriteObj = new FavouriteObj();
+                    favouriteObj.set('user', currentUser);
+                    favouriteObj.set('lessonId', collectionActionArr[z].lessonId);
+                    favouriteObj.set('lastModificationTime', collectionActionArr[z].lastModificationTime);
+                    favouriteObj.set('action', collectionActionArr[z].action);
+                    favouriteObj.save()
+                }
+            }
+            return {status: true, data: {}}
+        }
+    })
+
+});
+
 //// 阳光盒子1.0版本的发布云函数
 // AV.Cloud.define('pack', function (request) {   //打包
 //     console.log('发布课程！');
@@ -1422,7 +1491,7 @@ function getSnapshot(lesson_id, isChecked) {
         historyLesson.set('staging_package', value.attributes.staging_package); //提交审核暂存包
         historyLesson.set('package', value.attributes.package); //课程zip包
         historyLesson.set('manifest_json', value.attributes.manifest_json); //课程json文件
-        historyLesson.set('complier', value.attributes.complier); //编辑者
+        historyLesson.set('compiler', value.attributes.compiler); //编辑者
         historyLesson.save().then(function (value2) {
             console.log('课程历史版本已保存！');
             console.log('====');
