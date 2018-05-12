@@ -6,6 +6,7 @@ var archiver = require('archiver-promise');
 var xlsx = require('node-xlsx');
 var requests = require("request");
 var md5 = require('md5');
+var Promise = require('promise');
 
 
 //创建leancloud、classin账号
@@ -1071,7 +1072,9 @@ AV.Cloud.define('collection', function (request) {
 
     //获取数据
     var collectionActionArr = request.params.collectionActionArr;
-    console.log(collectionActionArr);
+    // console.log('=======传入数据==========');
+    // console.log(collectionActionArr);
+    // console.log('-------传入数据----------');
 
     //获取当前用户
     var currentUser = request.currentUser;
@@ -1086,6 +1089,9 @@ AV.Cloud.define('collection', function (request) {
     return collectionQuery.find().then(function (value) {
         //如果该用户没有收藏过任何课程
         if (value.length == 0) {
+
+            console.log('--该用户没有收藏过任何课程--')
+
             var favouriteArr = [];
             for (var i = 0; i < collectionActionArr.length; i++) {
                 var favouriteObj = new FavouriteObj();
@@ -1095,41 +1101,62 @@ AV.Cloud.define('collection', function (request) {
                 favouriteObj.set('action', collectionActionArr[i].action);
                 favouriteArr.push(favouriteObj);
             }
-            AV.Object.saveAll(favouriteArr);
-            return {status: true, data: {}}
+            return AV.Object.saveAll(favouriteArr).then(function (value2) {
+                return {status: true, data: {}}
+            });
         }
         //该用户收藏过课程
         else {
+
+            console.log('--该用户收藏过课程--');
+
             //获取所有已经收藏课程的id
             var collectedLessonIdArr = [];
+            var collectedLessonTimeArr = [];
+            var collectedLessonObjId = [];
             for (var j = 0; j < value.length; j++) {
-                collectedLessonIdArr.push(value[j].attributes.lessonId)
+                collectedLessonIdArr.push(value[j].attributes.lessonId);
+                collectedLessonTimeArr.push(value[j].attributes.lastModificationTime);
+                collectedLessonObjId.push(value[j].id);
             }
 
+            var savePromise = [];
             for (var z = 0; z < collectionActionArr.length; z++) {
-                //如果当前课程id有收藏记录
-                if (collectedLessonIdArr.indexOf(collectionActionArr[z].lessonId) !== -1) {
-                    for (var a = 0; a < value.length; a++) {
-                        //如果传入课程id时间晚于记录时间
-                        if (collectionActionArr[z].lessonId = value[a].attributes.lessonId && collectionActionArr[z].lastModificationTime >= value[a].attributes.lastModificationTime) {
-                            var updateCollection = AV.Object.createWithoutData('Favourite', value[a].id);
-                            updateCollection.set('lastModificationTime', collectionActionArr[z].lastModificationTime);
-                            updateCollection.set('action', collectionActionArr[z].action);
-                            updateCollection.save();
+                var actionCollection = new Promise(function (resolve, reject) {
+                    //如果当前课程id有收藏记录
+                    if (collectedLessonIdArr.indexOf(collectionActionArr[z].lessonId) != -1) {
+                        for(var a = 0; a < collectedLessonIdArr.length; a++) {
+                            if(collectionActionArr[z].lessonId === collectedLessonIdArr[a] && collectionActionArr[z].lastModificationTime >= collectedLessonTimeArr[a]){
+                                var updateCollection = AV.Object.createWithoutData('Favourite', collectedLessonObjId[a]);
+                                updateCollection.set('lastModificationTime', collectionActionArr[z].lastModificationTime);
+                                updateCollection.set('action', collectionActionArr[z].action);
+                                updateCollection.save().then(function (value2) {
+                                    resolve();
+                                });
+                            }else {
+                                console.log('本次行为不做处理');
+                                resolve();
+                            }
                         }
                     }
-                }
-                //如果当前课程id没有收藏记录
-                else {
-                    var favouriteObj = new FavouriteObj();
-                    favouriteObj.set('user', currentUser);
-                    favouriteObj.set('lessonId', collectionActionArr[z].lessonId);
-                    favouriteObj.set('lastModificationTime', collectionActionArr[z].lastModificationTime);
-                    favouriteObj.set('action', collectionActionArr[z].action);
-                    favouriteObj.save()
-                }
+                    //如果当前课程id没有收藏记录
+                    else {
+                        console.log('==如果该课程没有过收藏记录==');
+                        var favouriteObj = new FavouriteObj();
+                        favouriteObj.set('user', currentUser);
+                        favouriteObj.set('lessonId', collectionActionArr[z].lessonId);
+                        favouriteObj.set('lastModificationTime', collectionActionArr[z].lastModificationTime);
+                        favouriteObj.set('action', collectionActionArr[z].action);
+                        favouriteObj.save().then(function (value2) {
+                            resolve();
+                        });
+                    }
+                });
+                savePromise.push(actionCollection);
             }
-            return {status: true, data: {}}
+            return Promise.all(savePromise).then(function () {
+                return {status: true, data: {}}
+            });
         }
     })
 
