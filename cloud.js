@@ -9,6 +9,7 @@ var md5 = require('md5');
 var Promise = require('promise');
 
 
+
 //创建leancloud、classin账号
 AV.Cloud.define('registration', function (request) {
 
@@ -143,28 +144,52 @@ AV.Cloud.define('draftSave', function (request) {
     var compiler = request.currentUser.getUsername();
 
     //验证用户信息---------------->
-    var phonesArr = [];
-    var admin2 = AV.Object.createWithoutData('_Role', '5ab6001dac502e57c949a142');
-    var relation = admin2.relation('users');
-    var query = relation.query();
-    return query.find().then(function (results) {
-        results.forEach(function (data) {
-            phonesArr.push(data.attributes.mobilePhoneNumber);
-        });
-        var user = request.currentUser;
-        if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
+    return request.currentUser.getRoles().then(function (value) {
+        console.log('---' + JSON.stringify(value));
+        var rolesArr = [];
+        for (var i = 0; i < value.length; i++) {
+            if(value[i].id == '5ab6000d17d0096887783cd6' || value[i].id =='5ab6001dac502e57c949a142'){
+                rolesArr.push(value[i].id);
+                break;
+            }
+        }
+
+        if(rolesArr.length != 0){
             draftVersionCodeControl(lesson_id, function () {
                 queryAllData(manifestData, materials);
             });
             var result = {'result': 200, 'data': {}};
             return result
-        } else {
+        }else {
             console.log('用户没有权限');
             var result = {'result': 401, 'data': {}};
             return result
         }
-    }, function (error) {
+
     });
+
+    // var phonesArr = [];
+    // var admin2 = AV.Object.createWithoutData('_Role', '5ab6001dac502e57c949a142');
+    // var relation = admin2.relation('users');
+    // var query = relation.query();
+    // return query.find().then(function (results) {
+    //     results.forEach(function (data) {
+    //         phonesArr.push(data.attributes.mobilePhoneNumber);
+    //     });
+    //     var user = request.currentUser;
+    //     if (phonesArr.indexOf(user.attributes.mobilePhoneNumber) != -1) {
+    //         draftVersionCodeControl(lesson_id, function () {
+    //             queryAllData(manifestData, materials);
+    //         });
+    //         var result = {'result': 200, 'data': {}};
+    //         return result
+    //     } else {
+    //         console.log('用户没有权限');
+    //         var result = {'result': 401, 'data': {}};
+    //         return result
+    //     }
+    // }, function (error) {
+    // });
 
     //到这里结束<--------------------
 
@@ -190,8 +215,25 @@ AV.Cloud.define('draftSave', function (request) {
             queryLessonPlan.get(lessonPlan_id).then(function (dataLessonPlan) {
                 manifestData.content = dataLessonPlan.attributes.content;   //这里将content添加到json
                 manifestData.author = dataLessonPlan.attributes.author;    //这里将author添加到json
-                queryLessonMaterialData(manifestData, materials, dataAll);
+                querySpecialId(manifestData, materials, dataAll)
             })
+        })
+    }
+    
+    function querySpecialId(manifestData, materials, lesson) {    //这里获取课程的专题id
+        var specialIdQuery = new AV.Query('LessonSpecial');
+        specialIdQuery.equalTo('lesson', lesson);
+        specialIdQuery.find().then(function (value) {
+            var specialIdArr = [];
+            if(value.length == 0){
+                queryLessonMaterialData(manifestData, materials, lesson);
+            }else {
+                for(var i=0;i<value.length;i++){
+                    specialIdArr.push(value[i].attributes.special.id);
+                }
+                manifestData.special = specialIdArr;
+                queryLessonMaterialData(manifestData, materials, lesson);
+            }
         })
     }
 
@@ -426,8 +468,25 @@ AV.Cloud.define('submitAudit', function (request) {
             queryLessonPlan.get(lessonPlan_id).then(function (dataLessonPlan) {
                 manifestData.content = dataLessonPlan.attributes.content;   //这里将content添加到json
                 manifestData.author = dataLessonPlan.attributes.author;    //这里将author添加到json
-                queryLessonMaterialData(manifestData, materials, dataAll);
+                querySpecialId(manifestData, materials, dataAll)
             })
+        })
+    }
+
+    function querySpecialId(manifestData, materials, lesson) {    //这里获取课程的专题id
+        var specialIdQuery = new AV.Query('LessonSpecial');
+        specialIdQuery.equalTo('lesson', lesson);
+        specialIdQuery.find().then(function (value) {
+            var specialIdArr = [];
+            if(value.length == 0){
+                queryLessonMaterialData(manifestData, materials, lesson);
+            }else {
+                for(var i=0;i<value.length;i++){
+                    specialIdArr.push(value[i].attributes.special.id);
+                }
+                manifestData.special = specialIdArr;
+                queryLessonMaterialData(manifestData, materials, lesson);
+            }
         })
     }
 
@@ -806,7 +865,24 @@ AV.Cloud.define('publish', function (request) {   //打包
         queryLessonPlan.get(lessonPlan_id).then(function (dataLessonPlan) {
             manifestData.content = dataLessonPlan.attributes.content;   //这里将content添加到json
             manifestData.author = dataLessonPlan.attributes.author;    //这里将author添加到json
-            queryLessonMaterialData(manifestData, materials, dataAll);
+            querySpecialId(manifestData, materials, dataAll);
+        })
+    }
+
+    function querySpecialId(manifestData, materials, lesson) {    //这里获取课程的专题id
+        var specialIdQuery = new AV.Query('LessonSpecial');
+        specialIdQuery.equalTo('lesson', lesson);
+        specialIdQuery.find().then(function (value) {
+            var specialIdArr = [];
+            if(value.length == 0){
+                queryLessonMaterialData(manifestData, materials, lesson);
+            }else {
+                for(var i=0;i<value.length;i++){
+                    specialIdArr.push(value[i].attributes.special.id);
+                }
+                manifestData.special = specialIdArr;
+                queryLessonMaterialData(manifestData, materials, lesson);
+            }
         })
     }
 
@@ -1125,15 +1201,15 @@ AV.Cloud.define('collection', function (request) {
                 var actionCollection = new Promise(function (resolve, reject) {
                     //如果当前课程id有收藏记录
                     if (collectedLessonIdArr.indexOf(collectionActionArr[z].lessonId) != -1) {
-                        for(var a = 0; a < collectedLessonIdArr.length; a++) {
-                            if(collectionActionArr[z].lessonId === collectedLessonIdArr[a] && collectionActionArr[z].lastModificationTime >= collectedLessonTimeArr[a]){
+                        for (var a = 0; a < collectedLessonIdArr.length; a++) {
+                            if (collectionActionArr[z].lessonId === collectedLessonIdArr[a] && collectionActionArr[z].lastModificationTime >= collectedLessonTimeArr[a]) {
                                 var updateCollection = AV.Object.createWithoutData('Favourite', collectedLessonObjId[a]);
                                 updateCollection.set('lastModificationTime', collectionActionArr[z].lastModificationTime);
                                 updateCollection.set('action', collectionActionArr[z].action);
                                 updateCollection.save().then(function (value2) {
                                     resolve();
                                 });
-                            }else {
+                            } else {
                                 console.log('本次行为不做处理');
                                 resolve();
                             }
