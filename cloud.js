@@ -1337,14 +1337,19 @@ function getSnapshot(lesson_id, isChecked) {
 
 //新注册的用户默认创建teacher角色的hook函数
 AV.Cloud.afterSave('_User', function (request) {
-    console.log('设置当前用户为teacher');
-    var teacher = AV.Object.createWithoutData('_Role', '5a76ada2ee920a0045e23e17');
-    var users1 = [request.object];
-    var relation1 = teacher.relation('users');
-    users1.map(relation1.add.bind(relation1));
-    return teacher.save().then(function (value1) {
-        console.log(value1)
-    }, function (reason1) {
-        console.log(reason1)
+
+    console.log('设置手机号验证为true并设置未teacher角色');
+    console.log(request.object.id);
+    var userId = request.object.id;
+    var update = AV.Object.createWithoutData('_User', userId);
+    update.set('mobilePhoneVerified', true);
+    return update.save().then(function (value) {
+        var nowRole = AV.Object.createWithoutData('_Role', '5a76ada2ee920a0045e23e17');
+        nowRole.getUsers().add(value);
+        nowRole.save().then(function (data) {
+            console.log('设置角色成功...');
+        }, function (reason) {
+            console.log('reason: ' + reason);
+        })
     });
 });
