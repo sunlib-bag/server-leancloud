@@ -315,6 +315,8 @@ AV.Cloud.define('draftSave', function (request) {
                                 materialObj.album_name = dataAlbums[j].attributes.name;
                                 materialObj.mime_type = dataAlbums[j].attributes.file.attributes.mime_type;
                                 materialObj.type = dataAlbums[j].attributes.type;
+
+                                materialObj.isRepeatShow = dataAlbums[j].attributes.isRepeatShow;  //将isRepeatShow字段添加到json文件
                                 filesData.push(materialObj)
                             }
                             if (albumsSign.length == i + 1) {
@@ -339,12 +341,14 @@ AV.Cloud.define('draftSave', function (request) {
                         materialObj.name = dataMaterialUrl.attributes.name;
                         materialObj.mime_type = 'album';
                         materialObj.type = dataMaterialUrl.attributes.type;
+                        materialObj.isRepeatShow = dataMaterialUrl.attributes.isRepeatShow;  //将isRepeatShow字段添加到json文件
                     } else {
                         materialObj.url = dataMaterialUrl.attributes.file.attributes.url;
                         materialObj.filename = materialObj.id;
                         materialObj.name = dataMaterialUrl.attributes.name;
                         materialObj.mime_type = dataMaterialUrl.attributes.file.attributes.mime_type;
                         materialObj.type = dataMaterialUrl.attributes.type;
+                        materialObj.isRepeatShow = dataMaterialUrl.attributes.isRepeatShow;  //将isRepeatShow字段添加到json文件
                     }
                     filesData.push(materialObj);
                     materialsSign.push(materialObj);
@@ -580,6 +584,7 @@ AV.Cloud.define('submitAudit', function (request) {
                                 materialObj.album_name = dataAlbums[j].attributes.name;
                                 materialObj.mime_type = dataAlbums[j].attributes.file.attributes.mime_type;
                                 materialObj.type = dataAlbums[j].attributes.type;
+                                materialObj.isRepeatShow = dataAlbums[j].attributes.isRepeatShow;  //将isRepeatShow字段添加到json文件
                                 filesData.push(materialObj)
                             }
                             if (albumsSign.length == i + 1) {
@@ -604,12 +609,14 @@ AV.Cloud.define('submitAudit', function (request) {
                         materialObj.name = dataMaterialUrl.attributes.name;
                         materialObj.mime_type = 'album';
                         materialObj.type = dataMaterialUrl.attributes.type;
+                        materialObj.isRepeatShow = dataMaterialUrl.attributes.isRepeatShow;  //将isRepeatShow字段添加到json文件
                     } else {
                         materialObj.url = dataMaterialUrl.attributes.file.attributes.url;
                         materialObj.filename = materialObj.id;
                         materialObj.name = dataMaterialUrl.attributes.name;
                         materialObj.mime_type = dataMaterialUrl.attributes.file.attributes.mime_type;
                         materialObj.type = dataMaterialUrl.attributes.type;
+                        materialObj.isRepeatShow = dataMaterialUrl.attributes.isRepeatShow;  //将isRepeatShow字段添加到json文件
                     }
                     filesData.push(materialObj);
                     materialsSign.push(materialObj);
@@ -980,6 +987,7 @@ AV.Cloud.define('publish', function (request) {   //打包
                                 materialObj.album_name = dataAlbums[j].attributes.name;
                                 materialObj.mime_type = dataAlbums[j].attributes.file.attributes.mime_type;
                                 materialObj.type = dataAlbums[j].attributes.type;
+                                materialObj.isRepeatShow = dataAlbums[j].attributes.isRepeatShow;  //将isRepeatShow字段添加到json文件
                                 filesData.push(materialObj)
                             }
                             if (albumsSign.length == i + 1) {
@@ -1004,12 +1012,14 @@ AV.Cloud.define('publish', function (request) {   //打包
                         materialObj.name = dataMaterialUrl.attributes.name;
                         materialObj.mime_type = 'album';
                         materialObj.type = dataMaterialUrl.attributes.type;
+                        materialObj.isRepeatShow = dataMaterialUrl.attributes.isRepeatShow;  //将isRepeatShow字段添加到json文件
                     } else {
                         materialObj.url = dataMaterialUrl.attributes.file.attributes.url;
                         materialObj.filename = materialObj.id;
                         materialObj.name = dataMaterialUrl.attributes.name;
                         materialObj.mime_type = dataMaterialUrl.attributes.file.attributes.mime_type;
                         materialObj.type = dataMaterialUrl.attributes.type;
+                        materialObj.isRepeatShow = dataMaterialUrl.attributes.isRepeatShow;  //将isRepeatShow字段添加到json文件
                     }
                     filesData.push(materialObj);
                     materialsSign.push(materialObj);
