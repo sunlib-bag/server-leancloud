@@ -32,7 +32,8 @@ function getAllData(res) {
 
 function getNextData(allData, num, res) {
     var queryData = new AV.Query('LearnLetterHelpUserAction');
-    queryData.limit(1000 * num);
+    queryData.skip(1000 * num);
+    queryData.limit(1000);
     queryData.find().then(function (value) {
         for(var i=0;i<value.length;i++){
             allData.push(value[i])
