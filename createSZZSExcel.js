@@ -37,9 +37,9 @@ function dataQuery(req) {
         var startDate = dateRange[0];
         var endDate = dateRange[1];
         var startQuery = new AV.Query('LearnLetterHelpUserAction');
-        startQuery.greaterThanOrEqualTo('createdAt',startDate);
+        startQuery.greaterThanOrEqualTo('createdAt',new Date(startDate));
         var endDateQuery = new AV.Query('LearnLetterHelpUserAction');
-        endDateQuery.lessThan('createdAt', endDate);
+        endDateQuery.lessThan('createdAt', new Date(endDate));
         queryData = AV.Query.and(startQuery, endDateQuery);
     }
     queryData.limit(1000);
@@ -96,25 +96,19 @@ function dataHandler(dateRange,value, res) {
             return item.name == userActionInfo.gradeBookName;
         });
         userActionInfo.courseName = userActionInfo.courseName.replace(/&nbsp/g, "");
-        // userActionInfo.createdAt = userActionInfo.createdAt.Format("yyyy-MM-dd");
         allData[index].data.push(userActionInfo);
         return userActionInfo
     });
-    console.log(allData.toString())
     var currentDate = dateRange[0];
     var endDate = dateRange[1];
-    // var currentDate = new Date('2018-10-22');
-    // var endDate = new Date('2018-11-03');
     var keyDates = [];
-    console.log(currentDate<endDate)
     //获取所有时间键值（2018-09-12）
     while (currentDate<endDate)
     {
-        var strDate = currentDate.Format("yyyy-MM-dd");
+        var strDate = new Date(currentDate).Format("yyyy-MM-dd");
         keyDates.push(strDate);
-        currentDate.setTime(currentDate.getTime()+24*60*60*1000);
+        currentDate = currentDate+24*60*60*1000;
     }
-
     console.log(keyDates)
 
     //将每科的数据处理成某个日期某节课程的时长统计
@@ -125,7 +119,6 @@ function dataHandler(dateRange,value, res) {
         for (var i = 0; i < courseInfos.length; i ++)
         {
             var courseAndSection = courseInfos[i].courseName + courseInfos[i].learnBlockHtml;
-            console.log(courseAndSection)
             var index = allCourseAndSectionKeys.indexOf(courseAndSection)
             if (index == -1)
             {
@@ -165,13 +158,9 @@ function dataHandler(dateRange,value, res) {
             var arrUsageTimeList = Object.values(arrDatas[i]);
             allValidData.push(arrUsageTimeList)
         }
-
-
         //将处理后的数据替换掉
         allData[j].data = allValidData
     }
-    console.log(171)
-    console.log(allData);
     creatExcel(allData, res);
 }
 
