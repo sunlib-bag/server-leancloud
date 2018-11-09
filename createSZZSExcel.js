@@ -63,24 +63,31 @@ function getNextData(allData, num, res,req) {
         }
     })
 }
+AV.Cloud.define('saveLearnLetterUserAction', function (req, res) {
+    var userAction = req.params.userAction;
+    console.log(userAction)
+    console.log(req.meta.remoteAddress)
+    var LearnLetterHelpUserAction = AV.Object.extend('LearnLetterHelpUserAction');
+    var learnLetterHelpUserAction = new LearnLetterHelpUserAction();
+    // var LearnLetterHelpUserAction = AV.Object.extend('LearnLetterHelpUserAction');
+    // var learnLetterHelpUserAction =  new LearnLetterHelpUserAction();
+    // 新建一个 Todo 对象
+    learnLetterHelpUserAction.set('gradeBookName' , userAction.gradeBookName);
+    learnLetterHelpUserAction.set('learnBlockHtml' , userAction.learnBlockHtml);
+    learnLetterHelpUserAction.set('courseName' , userAction.courseName);
+    learnLetterHelpUserAction.set('usageTime' ,  userAction.usageTime);
+    learnLetterHelpUserAction.set('ip' , req.meta.remoteAddress);
+    learnLetterHelpUserAction.save().then(function (todo) {
+        // 成功保存之后，执行其他逻辑.
+        console.log('New object created with objectId: ' + todo.id);
+        return res.success({status: 200, data: todo});
+    }, function (error) {
+        return res.success({status: 401, data: error});
+    });
+});
 
-function dataHandler1(dateRange,value, res) {
-    var allData = [];
-    console.log(value)
-    for(var i=0;i<value.length;i++){
-        var data = value[i];
-        var info = [];
-        info.push(data.id);
-        info.push(data.attributes.gradeBookName);
-        info.push(data.attributes.usageTime);
-        info.push(data.attributes.learnBlockHtml);
-        info.push(data.attributes.courseName);
-        info.push(data.createdAt);
-        info.push(data.updatedAt);
-        allData.push(info);
-    }
-    creatExcel(allData, res);
-}
+
+
 function dataHandler(dateRange,value, res) {
 
     var allData = [{name:'澡宝宝幼儿阅读识字',data:[]},
@@ -109,7 +116,7 @@ function dataHandler(dateRange,value, res) {
         keyDates.push(strDate);
         currentDate = currentDate+24*60*60*1000;
     }
-    console.log(keyDates)
+    console.log(keyDates)//日期数组
 
     //将每科的数据处理成某个日期某节课程的时长统计
     for (var j = 0; j < allData.length; j ++)
@@ -160,10 +167,43 @@ function dataHandler(dateRange,value, res) {
         }
         //将处理后的数据替换掉
         allData[j].data = allValidData
+
     }
+    //统计ip每天访问的数量
+    var dateIPCount = getDayUserCount(keyDates,value);
+
+    keyDates.unshift('人数/日期');
+    allData.push({name:'每天的访问人数统计',data:[keyDates,dateIPCount]});
     creatExcel(allData, res);
 }
-
+function getDayUserCount(keyDates,value){
+    var dateIPCount = ['数量'];
+    for (var h = 0;h < keyDates.length; h ++){
+        var dateDataInfoWithIPs = value.filter(function (data) {
+            var formatDate = new Date(data.createdAt).Format('yyyy-MM-dd');
+            return formatDate == keyDates[h];
+        });
+        console.log(dateDataInfoWithIPs);
+        var arrUniqIPs = [];
+        for(var m = 0;m < dateDataInfoWithIPs.length; m ++)
+        {
+            var dataInfo = dateDataInfoWithIPs[m].toJSON();
+            console.log(dataInfo.ip)
+            if (dataInfo.ip)
+            {
+                var filterInfo = arrUniqIPs.filter(function (item) {
+                    return item.ip == dataInfo.ip;
+                })
+                if (filterInfo.length == 0)
+                {
+                    arrUniqIPs.push(dataInfo);
+                }
+            }
+        }
+        dateIPCount.push(arrUniqIPs.length.toString());
+    }
+    return dateIPCount;
+}
 Date.prototype.Format = function (fmt) { //author: meizz
     var o = {
         "M+": this.getMonth() + 1, //月份
@@ -181,11 +221,8 @@ Date.prototype.Format = function (fmt) { //author: meizz
 }
 
 function creatExcel(allData, res) {
-    console.log('======185')
-    console.log(allData)
     // var buffer = xlsx.build([{name: '表哥', data: allData}]);
     var buffer = xlsx.build(allData);
-    console.log('======188')
     fs.writeFileSync('./SZZS.xlsx', buffer);
     uploadFile(res);
 }
